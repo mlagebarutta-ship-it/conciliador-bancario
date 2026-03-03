@@ -149,7 +149,7 @@ export default function Dashboard() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <button
-                          onClick={() => navigate(`/historico/${statement.id}`)}
+                          onClick={() => navigate(`/editar/${statement.id}`)}
                           data-testid={`ver-detalhes-${statement.id}`}
                           className="text-indigo-400 hover:text-indigo-300 transition-colors text-sm"
                         >
