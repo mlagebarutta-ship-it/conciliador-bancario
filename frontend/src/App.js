@@ -7,6 +7,7 @@ import Companies from './pages/Companies';
 import ChartOfAccounts from './pages/ChartOfAccounts';
 import NewProcessing from './pages/NewProcessing';
 import History from './pages/History';
+import StatementDetails from './pages/StatementDetails';
 import Settings from './pages/Settings';
 import './App.css';
 
