@@ -32,7 +32,7 @@ function App() {
             <Route path="/plano-contas" element={<ChartOfAccounts />} />
             <Route path="/novo-processamento" element={<NewProcessing />} />
             <Route path="/historico" element={<History />} />
-            <Route path="/historico/:id" element={<History />} />
+            <Route path="/historico/:id" element={<StatementDetails />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Routes>
         </SidebarLayout>
