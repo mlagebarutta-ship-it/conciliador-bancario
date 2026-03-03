@@ -1,0 +1,10 @@
+codigo,descricao,tipo
+1.1.01,Banco Itaú,ATIVO
+1.1.02,Banco Bradesco,ATIVO
+1.2.01,Aplicações Financeiras,ATIVO
+2.1.01,Fornecedores,PASSIVO
+3.1.01,Despesas com Pessoal,DESPESA
+3.2.01,Despesas Bancárias,DESPESA
+3.3.01,Despesas Operacionais,DESPESA
+4.1.01,Receita de Vendas,RECEITA
+4.2.01,Receita de Serviços,RECEITA
