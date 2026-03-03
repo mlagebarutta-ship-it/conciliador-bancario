@@ -74,7 +74,9 @@ Sistema especializado para processamento de extratos bancários destinado a escr
 - **Pydantic** - Validação de dados
 - **openpyxl** - Leitura/escrita de arquivos Excel
 - **ofxparse** - Parser de arquivos OFX
+- **pdfplumber** - Extração de dados de PDF
 - **pandas** - Manipulação de dados
+- **reportlab** - Geração de PDFs (para exemplos)
 
 ### Frontend
 - **React 19** - Biblioteca UI
