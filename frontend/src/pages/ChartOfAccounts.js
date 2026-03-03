@@ -13,7 +13,10 @@ export default function ChartOfAccounts() {
   const [selectedChart, setSelectedChart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showChartForm, setShowChartForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [showAccountForm, setShowAccountForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
   const [chartFormData, setChartFormData] = useState({
     company_id: '',
     name: '',
