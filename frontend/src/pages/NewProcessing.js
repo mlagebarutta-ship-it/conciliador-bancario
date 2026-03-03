@@ -408,11 +408,11 @@ export default function NewProcessing() {
                 </div>
                 <button
                   onClick={handleExport}
-                  data-testid="baixar-xls-btn"
+                  data-testid="baixar-xlsx-btn"
                   className="h-10 px-6 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)] flex items-center gap-2"
                 >
                   <Download size={16} />
-                  Baixar XLS
+                  Baixar XLSX
                 </button>
               </div>
             </div>
