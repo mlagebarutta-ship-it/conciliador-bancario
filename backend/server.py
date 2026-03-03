@@ -458,6 +458,88 @@ async def delete_chart(chart_id: str):
     await db.account_items.delete_many({"chart_id": chart_id})
     return {"message": "Plano de contas excluído com sucesso"}
 
+@api_router.post("/chart-of-accounts/{chart_id}/import")
+async def import_chart_accounts(
+    chart_id: str,
+    file: UploadFile = File(...)
+):
+    """Importar plano de contas em massa via Excel"""
+    try:
+        # Verificar se o plano existe
+        chart = await db.chart_of_accounts.find_one({"id": chart_id}, {"_id": 0})
+        if not chart:
+            raise HTTPException(status_code=404, detail="Plano de contas não encontrado")
+        
+        # Ler arquivo Excel
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        # Validar colunas esperadas
+        required_columns = ['codigo', 'descricao', 'tipo']
+        df.columns = df.columns.str.lower().str.strip()
+        
+        if not all(col in df.columns for col in required_columns):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Arquivo deve conter as colunas: {', '.join(required_columns)}"
+            )
+        
+        # Processar e inserir contas
+        imported_count = 0
+        errors = []
+        
+        for idx, row in df.iterrows():
+            try:
+                # Validar tipo
+                tipo = str(row['tipo']).upper().strip()
+                if tipo not in ['ATIVO', 'PASSIVO', 'RECEITA', 'DESPESA']:
+                    errors.append(f"Linha {idx + 2}: Tipo inválido '{tipo}'. Use: ATIVO, PASSIVO, RECEITA ou DESPESA")
+                    continue
+                
+                # Verificar se conta já existe
+                codigo = str(row['codigo']).strip()
+                existing = await db.account_items.find_one({
+                    "chart_id": chart_id,
+                    "code": codigo
+                }, {"_id": 0})
+                
+                if existing:
+                    # Atualizar conta existente
+                    await db.account_items.update_one(
+                        {"chart_id": chart_id, "code": codigo},
+                        {"$set": {
+                            "description": str(row['descricao']).strip(),
+                            "account_type": tipo
+                        }}
+                    )
+                else:
+                    # Criar nova conta
+                    account = AccountItem(
+                        chart_id=chart_id,
+                        code=codigo,
+                        description=str(row['descricao']).strip(),
+                        account_type=tipo
+                    )
+                    doc = account.model_dump()
+                    doc['created_at'] = doc['created_at'].isoformat()
+                    await db.account_items.insert_one(doc)
+                
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Linha {idx + 2}: {str(e)}")
+        
+        return {
+            "message": f"Importação concluída: {imported_count} contas processadas",
+            "imported_count": imported_count,
+            "errors": errors if errors else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar arquivo: {str(e)}")
+
 # Account Items
 @api_router.post("/account-items", response_model=AccountItem)
 async def create_account_item(item: AccountItemCreate):
