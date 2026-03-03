@@ -14,6 +14,7 @@ import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 import ofxparse
+import pdfplumber
 import io
 import re
 from collections import defaultdict
