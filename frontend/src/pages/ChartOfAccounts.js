@@ -112,6 +112,52 @@ export default function ChartOfAccounts() {
     }
   };
   
+  const handleImportAccounts = async () => {
+    if (!importFile || !selectedChart) {
+      toast.error('Selecione um arquivo');
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      
+      const response = await axios.post(
+        `${API}/chart-of-accounts/${selectedChart.id}/import`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      toast.success(response.data.message);
+      if (response.data.errors && response.data.errors.length > 0) {
+        console.warn('Erros durante importação:', response.data.errors);
+      }
+      
+      setShowImportModal(false);
+      setImportFile(null);
+      loadAccounts(selectedChart.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao importar contas');
+    }
+  };
+  
+  const downloadTemplate = () => {
+    // Criar template de exemplo
+    const csvContent = "codigo,descricao,tipo\n1.1.01,Banco Itaú,ATIVO\n4.1.01,Receita de Vendas,RECEITA\n3.1.01,Despesas Operacionais,DESPESA";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'template_plano_contas.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+  
   return (
     <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
