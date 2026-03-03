@@ -18,6 +18,9 @@ Sistema especializado para processamento de extratos bancários destinado a escr
 - Criação de múltiplos planos de contas por empresa
 - Cadastro de contas contábeis com código reduzido, descrição e tipo (ATIVO, PASSIVO, RECEITA, DESPESA)
 - Gerenciamento hierárquico de contas
+- **NOVO: Importação em massa via Excel/CSV** - Faça upload de um arquivo com todas as contas e importe de uma vez
+- Download de template para facilitar a importação
+- Atualização automática de contas existentes durante a importação
 
 ### 3. **Processamento de Extratos**
 - **Upload de arquivos** nos formatos: **OFX, Excel (.xlsx, .xls), CSV, PDF**
