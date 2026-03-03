@@ -159,7 +159,7 @@ export default function History() {
                             onClick={() => handleExport(statement.id)}
                             data-testid={`download-${statement.id}`}
                             className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-600/10 rounded-lg transition-colors"
-                            title="Baixar XLS"
+                            title="Baixar XLSX"
                           >
                             <Download size={16} />
                           </button>
