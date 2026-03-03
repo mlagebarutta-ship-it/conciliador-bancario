@@ -148,10 +148,18 @@ export default function History() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => navigate(`/historico/${statement.id}`)}
+                            data-testid={`ver-detalhes-${statement.id}`}
+                            className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-600/10 rounded-lg transition-colors"
+                            title="Ver detalhes e editar"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
                             onClick={() => handleExport(statement.id)}
                             data-testid={`download-${statement.id}`}
-                            className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-600/10 rounded-lg transition-colors"
-                            title="Baixar XLSX"
+                            className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-600/10 rounded-lg transition-colors"
+                            title="Baixar XLS"
                           >
                             <Download size={16} />
                           </button>
