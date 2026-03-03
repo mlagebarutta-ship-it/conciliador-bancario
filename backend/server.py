@@ -158,6 +158,66 @@ def clean_cnpj(cnpj: str) -> str:
     """Remove caracteres especiais do CNPJ"""
     return re.sub(r'[^0-9]', '', cnpj)
 
+def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
+    """Parse PDF bank statement"""
+    try:
+        transactions = []
+        
+        with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+            full_text = ""
+            for page in pdf.pages:
+                full_text += page.extract_text() + "\n"
+            
+            # Padrões comuns em extratos bancários brasileiros
+            # Formato: DD/MM/YYYY ou DD/MM  Descrição  Valor
+            lines = full_text.split('\n')
+            
+            for line in lines:
+                # Tentar encontrar data no formato DD/MM/YYYY ou DD/MM
+                date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', line)
+                if not date_match:
+                    continue
+                
+                date_str = date_match.group(1)
+                # Se só tem DD/MM, adicionar ano atual
+                if len(date_str) == 5:
+                    date_str += "/2026"
+                
+                # Extrair valor (formato brasileiro: 1.234,56 ou -1.234,56)
+                value_match = re.search(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2})', line)
+                if not value_match:
+                    continue
+                
+                value_str = value_match.group(1).replace('.', '').replace(',', '.').replace(' ', '')
+                try:
+                    amount = float(value_str)
+                except:
+                    continue
+                
+                # Extrair descrição (texto entre data e valor)
+                date_end = date_match.end()
+                value_start = value_match.start()
+                description = line[date_end:value_start].strip()
+                
+                # Limpar descrição
+                description = re.sub(r'\s+', ' ', description)
+                
+                if description and amount != 0:
+                    transactions.append({
+                        'date': date_str,
+                        'description': description,
+                        'amount': amount,
+                        'transaction_type': 'C' if amount > 0 else 'D'
+                    })
+        
+        if not transactions:
+            raise HTTPException(status_code=400, detail="Não foi possível extrair transações do PDF. Verifique se o formato é compatível.")
+        
+        return transactions
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar PDF: {str(e)}")
+
 def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
     """Parse Excel bank statement"""
     try:
