@@ -68,12 +68,12 @@ export default function StatementDetails() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `extrato_${id}.xls`);
+      link.setAttribute('download', `extrato_${id}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       
-      toast.success('Arquivo XLS baixado com sucesso!');
+      toast.success('Arquivo XLSX baixado com sucesso!');
     } catch (error) {
       toast.error('Erro ao exportar arquivo');
     }
