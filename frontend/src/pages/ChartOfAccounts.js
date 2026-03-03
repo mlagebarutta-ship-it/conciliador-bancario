@@ -457,17 +457,27 @@ export default function ChartOfAccounts() {
                 {selectedChart ? `Contas - ${selectedChart.name}` : 'Selecione um plano'}
               </h2>
               {selectedChart && (
-                <button
-                  onClick={() => {
-                    setAccountFormData({ ...accountFormData, chart_id: selectedChart.id });
-                    setShowAccountForm(true);
-                  }}
-                  data-testid="adicionar-conta-plano-btn"
-                  className="h-10 px-4 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-all flex items-center gap-2"
-                >
-                  <Plus size={20} />
-                  Adicionar Conta
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    data-testid="importar-plano-btn"
+                    className="h-10 px-4 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 transition-all flex items-center gap-2"
+                  >
+                    <Upload size={18} />
+                    Importar Excel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAccountFormData({ ...accountFormData, chart_id: selectedChart.id });
+                      setShowAccountForm(true);
+                    }}
+                    data-testid="adicionar-conta-plano-btn"
+                    className="h-10 px-4 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-all flex items-center gap-2"
+                  >
+                    <Plus size={20} />
+                    Adicionar Conta
+                  </button>
+                </div>
               )}
             </div>
             
