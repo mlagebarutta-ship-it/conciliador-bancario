@@ -523,10 +523,12 @@ async def upload_statement(
     transactions = []
     if file.filename.endswith('.ofx'):
         transactions = parse_ofx_statement(content)
-    elif file.filename.endswith(('.xlsx', '.xls')):
+    elif file.filename.endswith('.pdf'):
+        transactions = parse_pdf_statement(content)
+    elif file.filename.endswith(('.xlsx', '.xls', '.csv')):
         transactions = parse_excel_statement(content)
     else:
-        raise HTTPException(status_code=400, detail="Formato não suportado. Use OFX ou Excel")
+        raise HTTPException(status_code=400, detail="Formato não suportado. Use OFX, PDF, Excel ou CSV")
     
     # Criar statement
     statement_id = str(uuid.uuid4())
