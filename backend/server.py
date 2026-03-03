@@ -768,13 +768,13 @@ async def export_statement(statement_id: str):
     ws.column_dimensions['H'].width = 25
     ws.column_dimensions['I'].width = 30
     
-    # Salvar arquivo em formato XLS (Excel 97-2003)
+    # Salvar arquivo em formato XLSX
     cnpj_clean = clean_cnpj(company['cnpj'])
-    filename = f"{cnpj_clean}_{statement['bank_name'].upper()}_{statement['period'].replace('/', '')}_{statement_id[:8]}_LANCAMENTOS.xls"
+    filename = f"{cnpj_clean}_{statement['bank_name'].upper()}_{statement['period'].replace('/', '')}_{statement_id[:8]}_LANCAMENTOS.xlsx"
     filepath = f"/tmp/{filename}"
     wb.save(filepath)
     
-    return FileResponse(filepath, filename=filename, media_type='application/vnd.ms-excel')
+    return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @api_router.delete("/bank-statements/{statement_id}")
 async def delete_statement(statement_id: str):
