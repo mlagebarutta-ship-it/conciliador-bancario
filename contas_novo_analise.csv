@@ -1,0 +1,320 @@
+Código,ATIVO,CLASSIFICAÇÃO
+1,Caixa,1.1.1.01.0001
+3,Banco Itaú c/ Movimento Ag: 0466 c/c: 99721-1,1.1.1.02.0001
+6,(-) Cheques a Compensar,1.1.1.02.0003
+11,Aplicação Banco Itaú c/ Movimento Ag: 0466 c/c: 99721-1,1.1.1.03.0001
+21,Duplicatas/Cheques a Receber,1.1.2.01.0001
+22,Banco Itau c/Cobrança,1.1.2.01.0002
+23,(-) Negociação Dividas,1.1.2.01.0003
+51106,RADIO E TELEVISAO BANDEIRANTES SA,1.1.2.01.0004
+31,(-) Banco c/Dpls Descontadas,1.1.2.03.0001
+41,(-) Cobrança de Terceiros (Trustee),1.1.2.04.0001
+51,(-) Prov.p/Creditos Liquidacao Duvidosa,1.1.2.05.0001
+61,C/C Clientes Diversos,1.1.3.01.0001
+71,Titulos a Receber,1.1.3.02.0001
+81,Cheques em Cobrança,1.1.3.03.0001
+91,Alienação ,1.1.3.04.0001
+101,Adiantamento para Fornecedores,1.1.3.05.0001
+111,Adiantamento de Salario,1.1.3.06.0001
+112,Adiantamento de 13º Salario,1.1.3.06.0002
+113,Adiantamento de Ferias,1.1.3.06.0003
+114,Adiantamento para Viagem,1.1.3.06.0004
+121,Emprestimos a Socios,1.1.3.07.0001
+122,Emprestimos a Empregados,1.1.3.07.0002
+123,Emprestimos a Coligadas,1.1.3.07.0003
+131,Valores a Classificar,1.1.3.10.0001
+141,ICMS a Recuperar,1.1.4.01.0001
+142,IRRF a Recuperar,1.1.4.01.0002
+143,IRPJ a Recuperar,1.1.4.01.0003
+144,CSLL a Recuperar,1.1.4.01.0004
+145,"CSLL a Recuperar (RF 1,00%)",1.1.4.01.0005
+146,PIS a Recuperar,1.1.4.01.0006
+147,"PIS a Recuperar (RF 0,65%)",1.1.4.01.0007
+148,PIS Recuperacao Fiscal,1.1.4.01.0008
+149,COFINS a Recuperar,1.1.4.01.0009
+150,"COFINS a Recuperar (RF 3,00%)",1.1.4.01.0010
+151,COFINS Recuperacao Fiscal,1.1.4.01.0011
+155,INSS a Recuperar,1.1.4.01.0015
+157,IRPJ Pago por Estimativa,1.1.4.01.0017
+158,Impostos a Recuperar,1.1.4.01.0018
+159,Simples Nacional Pago em Duplicidade,1.1.4.01.0019
+161,Estoque de Mercadorias,1.1.6.01.0001
+171,Premios de Seguros a Apropriar,1.1.7.01.0001
+172,Assinaturas e Anuidades a Apropriar,1.1.7.01.0002
+173,Juros a Apropriar,1.1.7.01.0003
+174,IOF a Apropriar,1.1.7.01.0004
+175,Garantia p/Equip.a Apropriar,1.1.7.01.0005
+176,Serviços Suporte a Apropriar,1.1.7.01.0006
+177,Licencas p/Utiliz.Software a Apropriar,1.1.7.01.0007
+191,Participacoes Societarias,1.2.2.01.0001
+192,Imoveis para Investimentos,1.2.2.01.0002
+201,Terrenos,1.2.2.02.0001
+202,Edificios,1.2.2.02.0002
+203,Construcoes,1.2.2.02.0003
+211,Moveis e Utensilios,1.2.2.02.0011
+212,Telefonia em Geral,1.2.2.02.0012
+221,Maquinas e Equipamentos,1.2.2.02.0021
+231,Automoveis,1.2.2.02.0031
+232,Caminhoes,1.2.2.02.0032
+233,Motocicletas,1.2.2.02.0033
+241,Equipamentos de Informatica,1.2.2.02.0041
+251,Instalacoes,1.2.2.02.0051
+261,Ferramentas,1.2.2.02.0061
+301,Softwares (Programas de Informatica),1.2.2.03.0001
+311,Marcas e Patentes,1.2.2.03.0011
+401,Despesas Pre-Operacionais,1.2.2.04.0001
+501,(-) Depreciacao Terrenos,1.2.2.05.0001
+502,(-) Depreciacao Edificios,1.2.2.05.0002
+503,(-) Depreciacao Construcoes,1.2.2.05.0003
+511,(-) Depreciacao Moveis e Utensilios,1.2.2.05.0011
+512,(-) Depreciacao Telefonia em Geral,1.2.2.05.0012
+521,(-) Depreciacao Maquinas e Equipamentos,1.2.2.05.0021
+531,(-) Depreciacao Automoveis,1.2.2.05.0031
+532,(-) Depreciacao Caminhoes,1.2.2.05.0032
+533,(-) Depreciacao Motocicletas,1.2.2.05.0033
+541,(-) Depreciacao Equip.de Informatica,1.2.2.05.0041
+551,(-) Depreciacao Instalacoes,1.2.2.05.0051
+561,(-) Depreciacao Ferramentas,1.2.2.05.0061
+601,(-) Depreciacao Softwares (Prog.Inform.),1.2.2.05.0101
+801,Remessas para Demonstracao,1.8.1.01.0001
+802,Remessas para Conserto,1.8.1.01.0002
+803,Remessas para Industrializacao,1.8.1.01.0003
+804,Remessas para Industrializacao Terceiros,1.8.1.01.0004
+805,Outras Remessas Nao Especificadas,1.8.1.01.0005
+806,Remessa de Bem do Ativo Imobilizado,1.8.1.01.0006
+807,Remessas p/Dep.Fechado ou Armazem,1.8.1.01.0007
+813,Remessa Entrega Futura,1.8.1.01.0013
+821,Comodato com Clientes,1.8.1.02.0001
+822,Comodato com Fornecedores,1.8.1.02.0002
+831,Conta de Implante,1.8.1.03.0001
+832,Conta de Entradas e Saidas,1.8.1.03.0002
+833,Conta Trans.de Movimentacao de Terceiros,1.8.1.03.0003
+834,Conta Trans.de Movimentacao Mensal,1.8.1.03.0004
+835,Conta Transitoria de Compensacao,1.8.1.03.0005
+836,Conta Transitória de Folha de Pagamento,1.8.1.03.0006
+837,Conta Transitória de Pagamentos EF,1.8.1.03.0007
+838,Conta Transitória de Pagamentos RH,1.8.1.03.0008
+839,Conta Transitória de Ativo,1.8.1.03.0009
+840,Conta Transitória de Serviços Prestados,1.8.1.03.0010
+29001,Conta Transitória de Patrimônio Líquido,1.8.8.01.0001
+20002,PASSIVO,2
+51101,Fornecedores,2.1.1.01.0001
+51102,MASSAS TRADICAO FABRICACAO DE PRODUTOS DE PADARIA LTDA,2.1.1.01.0002
+51103,ALEX DA SILVA FERNANDES,2.1.1.01.0003
+51104,MODELLI IND E COM DE SACHES DE CAFE E MAQUINAS LTDA,2.1.1.01.0004
+51105,CENCOSUD BRASIL ATACADO LTDA,2.1.1.01.0005
+51107,GENERAL MOTORS DO BRASIL LTDA,2.1.1.01.0006
+51108,ITA PECAS PARA VEICULOS COMERCIO E SERVICOS LTDA,2.1.1.01.0007
+6001,Fornecedores Diversos,2.1.1.02.0001
+2001,ICMS a Recolher,2.1.2.01.0001
+2002,IRPJ a Recolher,2.1.2.01.0002
+2003,CSLL a Recolher,2.1.2.01.0003
+2004,SIMPLES a Recolher,2.1.2.01.0004
+2005,PIS a Recolher,2.1.2.01.0005
+2006,COFINS a Recolher,2.1.2.01.0006
+2007,IPI a Recolher,2.1.2.01.0007
+2008,IOF a Recolher,2.1.2.01.0008
+2009,Parcelamento Simples,2.1.2.01.0009
+2011,ISS a Recolher,2.1.2.01.0011
+2012,ISS Retido na Fonte a Recolher,2.1.2.01.0012
+2013,ICMS Antecipado a Recolher,2.1.2.01.0013
+2021,IRRF a Recolher,2.1.2.01.0021
+2022,IRRF s/Juros Emprestimo Mutuo a Recolher,2.1.2.01.0022
+2023,IRRF s/Juros Capital Proprio a Recolher,2.1.2.01.0023
+2024,IRRF s/Aluguel a Recolher,2.1.2.01.0024
+2050,CRF a Recolher,2.1.2.01.0050
+2136,CIDE s/ Importacao a Recolher,2.1.2.01.0051
+2201,Salarios e Ordenados a Pagar,2.1.3.01.0001
+2202,13º Salario a Pagar,2.1.3.01.0002
+2203,Ferias a Pagar,2.1.3.01.0003
+2204,Abono sobre Ferias a Pagar,2.1.3.01.0004
+2205,Rescisoes a Pagar,2.1.3.01.0005
+2211,Pro-labore a Pagar ,2.1.3.01.0011
+2220,Autonomo a Pagar,2.1.3.01.0020
+2221,INSS a Recolher,2.1.3.02.0001
+2222,FGTS a Recolher,2.1.3.02.0002
+2223,Contribuição Sindical a Recolher,2.1.3.02.0003
+2224,PIS s/Folha de Pagamento a Recolher,2.1.3.02.0004
+2225,IRRF s/Folha de Pagamento a Recolher,2.1.3.02.0005
+2226,IRRF s/Pro-labore a Recolher,2.1.3.02.0006
+2227,IRRF a Recolher s/Autonomo,2.1.3.02.0007
+2231,Provisao para 13º Salario,2.1.3.03.0001
+2232,INSS s/Provisao para 13º Salario,2.1.3.03.0002
+2233,FGTS s/Provisao para 13º Salario,2.1.3.03.0003
+2241,Provisao para Ferias,2.1.3.04.0001
+2242,INSS s/Provisao para Ferias,2.1.3.04.0002
+2243,FGTS s/Provisao para Ferias,2.1.3.04.0003
+2251,Banco Itau c/Movimento 0466/99721-0 - Saldo Devedor,2.1.4.01.0001
+2255,Banco Itau c/Movimento 0466/99721-0,2.1.4.01.0002
+2261,C/xxxxxxxx,2.1.4.02.0001
+2271,C/Financiamento,2.1.4.03.0001
+2501,Adiantamentos de Rec. Div. com Clientes,2.1.5.01.0001
+2502,C/C Clientes Diversos,2.1.5.01.0002
+2503,Outros Créditos a Classificar,2.1.5.01.0003
+2521,Seguros a Pagar,2.1.5.02.0001
+2522,Assinaturas e Anuidades a Pagar,2.1.5.02.0002
+2523,Aluguel a Pagar,2.1.5.02.0003
+2524,Energia Eletrica a Pagar,2.1.5.02.0004
+2525,Agua e Esgoto a Pagar,2.1.5.02.0005
+2526,Cartão Crédito a Pagar,2.1.5.02.0006
+2534,Cartão Credito a Pagar Itaucard Visa,2.1.5.02.0014
+2611,Dividendos Propostos,2.1.6.01.0001
+2612,Dividendos a Pagar,2.1.6.01.0002
+2621,Participacoes Prop. a Administradores,2.1.6.02.0001
+2622,Participacoes Prop. a Empregados,2.1.6.02.0002
+2623,Participacoes a Pagar,2.1.6.02.0003
+2631,Juros sobre Capital Proprio a Pagar,2.1.6.03.0001
+2650,Parcelamento de Debitos Tributarios Fede,2.2.1.04.0001
+2801,Remessas para Demonstracao,2.8.1.01.0001
+2802,Remessas para Conserto,2.8.1.01.0002
+2803,Remessas para Industrializacao,2.8.1.01.0003
+2804,Remessas para Industrializacao Terceiros,2.8.1.01.0004
+2805,Outras Remessas Nao Especificadas,2.8.1.01.0005
+2806,Remessa de Bem do Ativo Imobilizado,2.8.1.01.0006
+2807,Remessas p/Dep.Fechado ou Armazem,2.8.1.01.0007
+2813,Remessa Entrega Futura,2.8.1.01.0013
+2821,Comodato com Clientes,2.8.1.02.0001
+2822,Comodato com Fornecedores,2.8.1.02.0002
+2901,Capital Social - Pedro Luz Ribeiro,2.9.1.01.0001
+2921,(-) Capital a Integralizar,2.9.1.02.0001
+2931,AFAC - Adiant. P/Futuro Aumento de Capital,2.9.2.01.0001
+2941,Lucros Acumulados,2.9.4.01.0001
+2942,Lucros do Exercício em Curso,2.9.4.01.0002
+2943,(-) Lucros Distribuidos - xxxxx,2.9.4.01.0003
+2961,(-) Prejuizos Acumulados,2.9.6.01.0001
+2962,(-) Prejuizos do Exercicio em Curso,2.9.6.01.0002
+30003,RECEITAS,3
+3001,Receita de Vendas a Vista,3.1.1.01.0001
+3002,Receita de Vendas a Prazo,3.1.1.01.0002
+3021,Receita de Prestacao de Servicos,3.1.1.02.0001
+3022,Receita de Serviços de Cobrança,3.1.1.02.0002
+3023,Receita de Servicos de Industrializacao,3.1.1.02.0003
+3024,Receita de Servicos de Locacao Equipam.,3.1.1.02.0004
+3031,Receita de Creditos Mercantis,3.1.1.03.0001
+3032,Receita de Permanencia de Creditos,3.1.1.03.0002
+3041,Receita de Receb.Merc.em Bonificacao,3.1.1.04.0001
+3042,Receita de Envio de Merc.em Bonificacao,3.1.1.04.0002
+3101,(-) ICMS sobre Receitas,3.1.2.01.0001
+3102,(-) Imposto de Renda sobre Receitas,3.1.2.01.0002
+3103,(-) Contribuicao Social sobre Receitas,3.1.2.01.0003
+3104,(-) SIMPLES sobre Receitas,3.1.2.01.0004
+3105,(-) PIS sobre Receitas,3.1.2.01.0005
+3106,(-) COFINS sobre Receitas,3.1.2.01.0006
+3107,(-) IPI sobre Receitas,3.1.2.01.0007
+3111,(-) ISS sobre Receitas,3.1.2.01.0011
+3201,(-) Devolucao de Vendas,3.1.2.02.0001
+3301,Rendimentos de Aplicacao Financeira,3.1.3.01.0001
+3302,Juros Auferidos,3.1.3.01.0002
+3303,Descontos Obtidos,3.1.3.01.0003
+3304,Juros de Capital Próprio,3.1.3.01.0004
+3305,Receitas c/Atual. Simples Nacional,3.1.3.01.0005
+3310,Outras Receitas Financeiras,3.1.3.01.0010
+3311,Distribuição de Sobras,3.1.3.01.0011
+3401,Recuperacao de Creditos,3.1.4.01.0001
+3421,Reversao de Prov.de Perdas p/Incobraveis,3.1.4.02.0001
+3501,Receita na Alienacao de Part.em Coligada,3.2.1.01.0001
+3521,Receita na Alienacao de Imobilizado,3.2.1.02.0001
+3531,Receita de Sinistros com Imobilizado,3.2.1.03.0001
+40004,DESPESAS,4
+4201,Compras de Mercadorias,4.1.2.01.0001
+4202,Estoque Inicial de Mercadorias,4.1.2.01.0002
+4203,Estoque Final de Mercadorias,4.1.2.01.0003
+4204,Frete sobre Compras,4.1.2.01.0004
+4205,ICMS Antecipação Cfe Decreto 442/2015,4.1.2.01.0005
+4221,(-) Devolucao de Compras,4.1.2.02.0001
+4222,ICMS sobre Compras,4.1.2.02.0002
+4223,ICMS Antecipado cfe Decreto 442/2015,4.1.2.02.0003
+4401,Salarios e Ordenados,4.2.1.01.0001
+4402,13º Salario,4.2.1.01.0002
+4403,Ferias,4.2.1.01.0003
+4404,Abono sobre Ferias,4.2.1.01.0004
+4405,Adicionais sobre Salarios,4.2.1.01.0005
+4406,Horas Extras,4.2.1.01.0006
+4407,Comissoes,4.2.1.01.0007
+4408,Gratificacoes e Premios,4.2.1.01.0008
+4409,Vales Transporte,4.2.1.01.0009
+4410,Vales Refeicao,4.2.1.01.0010
+4411,Vales Alimentacao,4.2.1.01.0011
+4412,Fornecimento de Cestas Basicas,4.2.1.01.0012
+4413,Seguros para Funcionarios,4.2.1.01.0013
+4414,Indenizacoes,4.2.1.01.0014
+4415,Assistencia Medica,4.2.1.01.0015
+4416,Exames Medicos,4.2.1.01.0016
+4417,INSS,4.2.1.01.0017
+4418,FGTS,4.2.1.01.0018
+4419,Pro-labore,4.2.1.01.0019
+4420,INSS sobre Pro-labore,4.2.1.01.0020
+4421,Servicos de Autonomos,4.2.1.01.0021
+4422,PAT,4.2.1.01.0022
+4423,Energia Eletrica,4.2.1.01.0023
+4424,Agua e Esgoto,4.2.1.01.0024
+4425,Telecomunicacoes,4.2.1.01.0025
+4426,Telefonia Fixa,4.2.1.01.0026
+4427,Telefonia Movel,4.2.1.01.0027
+4428,Internet,4.2.1.01.0028
+4429,Aluguel de Imoveis,4.2.1.01.0029
+4430,Aluguel de Automoveis,4.2.1.01.0030
+4431,Aluguel e Arrendamento,4.2.1.01.0031
+4432,Condominio,4.2.1.01.0032
+4433,Conservacao e Manutencao,4.2.1.01.0033
+4434,"Manutencao Maquinas, Equip.Informatica",4.2.1.01.0034
+4435,Material de Consumo,4.2.1.01.0035
+4436,Copa e Cozinha,4.2.1.01.0036
+4437,Impressos e Material de Expediente,4.2.1.01.0037
+4438,Alimentacao,4.2.1.01.0038
+4439,Medicamentos,4.2.1.01.0039
+4440,Correios,4.2.1.01.0040
+4441,Cartorio,4.2.1.01.0041
+4442,"Legais, Juridicas e Processuais",4.2.1.01.0042
+4443,Consultas e Informacoes Cadastrais,4.2.1.01.0043
+4444,Manutencao de Automoveis,4.2.1.01.0044
+4445,Combustiveis e Lubrificantes,4.2.1.01.0045
+4446,Viagens,4.2.1.01.0046
+4447,Propaganda e Publicidade,4.2.1.01.0047
+4448,Anuncios Classificados,4.2.1.01.0048
+4449,Brindes e Amostras Gratis,4.2.1.01.0049
+4450,Estagios,4.2.1.01.0050
+4451,Seguros,4.2.1.01.0051
+4452,Assinaturas e Anuidades,4.2.1.01.0052
+4453,Corridas de Taxi,4.2.1.01.0053
+4454,Servicos de Motoboy,4.2.1.01.0054
+4455,Fretes,4.2.1.01.0055
+4456,Estacionamento,4.2.1.01.0056
+4457,Uniformes,4.2.1.01.0057
+4480,"Cursos, Treinamentos e Especialização",4.2.1.01.0080
+4498,Servicos Prestados,4.2.1.01.0081
+4500,Imobilizado de Pequeno Valor,4.2.1.01.0100
+4501,Depreciacao Bens com Recuperacao Fiscal,4.2.1.01.0101
+4502,Depreciacao Bens sem Recuperacao Fiscal,4.2.1.01.0102
+4601,Impostos e Taxas,4.2.1.02.0001
+4602,IPTU,4.2.1.02.0002
+4603,IPVA,4.2.1.02.0003
+4604,Sindicato,4.2.1.02.0004
+4605,Mensalidade ANFAC,4.2.1.02.0005
+4606,Imposto s/Importação,4.2.1.02.0006
+4631,Juros Passivos,4.2.1.03.0001
+4632,Juros sobre Capital Proprio,4.2.1.03.0002
+4633,Juros Bancarios,4.2.1.03.0003
+4634,Juros sobre Emprestimos e Financiamentos,4.2.1.03.0004
+4635,Descontos Concedidos,4.2.1.03.0005
+4636,Despesas com Cobranca,4.2.1.03.0006
+4637,Despesas Bancarias,4.2.1.03.0007
+4638,IOC,4.2.1.03.0008
+4639,IOF,4.2.1.03.0009
+4640,Multas de Mora,4.2.1.03.0010
+4630,IRRF,4.2.1.03.0011
+4641,Provisao para Perdas por Incobraveis,4.2.1.04.0001
+4642,Perdas Dif.Fechamento de Caixa,4.2.1.04.0002
+4643,Perdas p/Roubos ou Deteriorizacao,4.2.1.04.0003
+4661,PIS Dedução das Despesas,4.2.1.06.0001
+4662,COFINS Dedução das Despesas,4.2.1.06.0002
+5440,Correios,4.2.2.01.0040
+5459,"Cursos, Treinamentos e Especializaçao",4.2.2.01.0059
+4701,Custo na Alienacao de Part.em Coligada,4.3.1.01.0001
+4721,Custo na Alienacao de Imobilizado,4.3.1.02.0001
+4731,Custo de Sinistros com Imobilizado,4.3.1.03.0001
+4801,Multas de Transito,4.4.1.01.0001
+4901,Provisao IRPJ,4.5.1.01.0001
+4921,Provisao CSLL,4.5.1.02.0001
+50005,CONTAS DE APURAÇÃO,5
+5001,Resultado do Exercicio,5.1.1.01.0001
