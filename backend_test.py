@@ -181,54 +181,48 @@ class AgenteContabilAPITester:
             print("❌ Skipping - No company or chart created")
             return False
             
-        # Create test Excel content (simple CSV-like data)
-        test_data = """Data,Descrição,Valor
-01/01/2026,PIX RECEBIDO DE CLIENTE,1500.00
-02/01/2026,PIX TRANSF FORNECEDOR,-500.00
-03/01/2026,TARIFA BANCARIA,-15.50
-05/01/2026,SISPAG FOLHA JANEIRO,-3000.00
-10/01/2026,PIX RECEBIDO PAGAMENTO,2500.00"""
-        
-        # Create a simple text file (the backend should handle parsing)
-        files = {'file': ('extrato_teste.xlsx', test_data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-        
-        # Parameters need to be in URL query string
-        params = {
-            'company_id': self.created_ids['company'],
-            'chart_id': self.created_ids['chart'],
-            'bank_name': 'Nubank',
-            'period': '01/2026'
-        }
-        
-        url = f"{self.base_url}/bank-statements/upload"
-        self.tests_run += 1
-        print(f"\n🔍 Testing Upload Bank Statement...")
-        print(f"   URL: {url}")
-        
+        # Use the created Excel file
         try:
-            response = requests.post(url, files=files, params=params)
-            success = response.status_code == 200
-            if success:
-                self.tests_passed += 1
-                print(f"✅ Passed - Status: {response.status_code}")
-                try:
-                    response_data = response.json()
-                    if 'statement' in response_data:
-                        self.created_ids['statement'] = response_data['statement']['id']
-                        print(f"   Created statement ID: {response_data['statement']['id']}")
-                        print(f"   Total transactions: {response_data['statement']['total_transactions']}")
-                        print(f"   Classified: {response_data['statement']['classified_count']}")
-                        print(f"   Manual: {response_data['statement']['manual_count']}")
-                    return True
-                except:
-                    return True
-            else:
-                print(f"❌ Failed - Expected 200, got {response.status_code}")
-                try:
-                    print(f"   Response: {response.text}")
-                except:
-                    pass
-                return False
+            with open('/app/extrato_teste.xlsx', 'rb') as f:
+                files = {'file': ('extrato_teste.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                
+                # Parameters need to be in URL query string
+                params = {
+                    'company_id': self.created_ids['company'],
+                    'chart_id': self.created_ids['chart'],
+                    'bank_name': 'Nubank',
+                    'period': '01/2026'
+                }
+                
+                url = f"{self.base_url}/bank-statements/upload"
+                self.tests_run += 1
+                print(f"\n🔍 Testing Upload Bank Statement...")
+                print(f"   URL: {url}")
+                
+                response = requests.post(url, files=files, params=params)
+                success = response.status_code == 200
+                if success:
+                    self.tests_passed += 1
+                    print(f"✅ Passed - Status: {response.status_code}")
+                    try:
+                        response_data = response.json()
+                        if 'statement' in response_data:
+                            self.created_ids['statement'] = response_data['statement']['id']
+                            print(f"   Created statement ID: {response_data['statement']['id']}")
+                            print(f"   Total transactions: {response_data['statement']['total_transactions']}")
+                            print(f"   Classified: {response_data['statement']['classified_count']}")
+                            print(f"   Manual: {response_data['statement']['manual_count']}")
+                        return True
+                    except Exception as e:
+                        print(f"   Warning: Could not parse response: {e}")
+                        return True
+                else:
+                    print(f"❌ Failed - Expected 200, got {response.status_code}")
+                    try:
+                        print(f"   Response: {response.text}")
+                    except:
+                        pass
+                    return False
         except Exception as e:
             print(f"❌ Failed - Error: {str(e)}")
             return False
