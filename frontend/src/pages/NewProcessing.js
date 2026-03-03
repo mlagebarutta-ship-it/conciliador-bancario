@@ -177,11 +177,11 @@ export default function NewProcessing() {
             <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center hover:border-indigo-500/50 transition-colors">
               <Upload className="mx-auto text-slate-500 mb-4" size={48} />
               <p className="text-white mb-2">Arraste o arquivo ou clique para selecionar</p>
-              <p className="text-sm text-slate-500 mb-4">Formatos aceitos: OFX, Excel (.xlsx, .xls), CSV</p>
+              <p className="text-sm text-slate-500 mb-4">Formatos aceitos: OFX, Excel (.xlsx, .xls), CSV, PDF</p>
               <input
                 type="file"
                 onChange={handleFileChange}
-                accept=".ofx,.xlsx,.xls,.csv"
+                accept=".ofx,.xlsx,.xls,.csv,.pdf"
                 data-testid="file-input"
                 className="hidden"
                 id="file-upload"
