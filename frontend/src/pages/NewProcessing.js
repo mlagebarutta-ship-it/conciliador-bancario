@@ -58,8 +58,8 @@ export default function NewProcessing() {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       const ext = selectedFile.name.split('.').pop().toLowerCase();
-      if (!['ofx', 'xlsx', 'xls', 'csv'].includes(ext)) {
-        toast.error('Formato não suportado. Use OFX, Excel ou CSV');
+      if (!['ofx', 'xlsx', 'xls', 'csv', 'pdf'].includes(ext)) {
+        toast.error('Formato não suportado. Use OFX, Excel, CSV ou PDF');
         return;
       }
       setFile(selectedFile);
