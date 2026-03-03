@@ -130,11 +130,19 @@ Sistema especializado para processamento de extratos bancários destinado a escr
 1. Acesse **Plano de Contas**
 2. Clique em "Novo Plano de Contas"
 3. Selecione a empresa e dê um nome
-4. Adicione contas com códigos reduzidos (ex: 1.1.01, 4.1.01)
+4. **OPÇÃO A - Adicionar contas manualmente:**
+   - Clique em "Adicionar Conta"
+   - Preencha código, descrição e tipo
+5. **OPÇÃO B - Importar em massa (NOVO):**
+   - Clique em "Importar Excel"
+   - Baixe o template de exemplo
+   - Preencha com suas contas (colunas: codigo, descricao, tipo)
+   - Faça upload do arquivo
+   - Sistema importa automaticamente todas as contas
 
 ### Passo 3: Processar Extrato
 1. Acesse **Novo Processamento**
-2. Faça upload do arquivo (use o arquivo de exemplo fornecido)
+2. Faça upload do arquivo (**OFX, Excel, CSV ou PDF**)
 3. Configure: empresa, plano, banco e período
 4. Clique em "Processar Extrato"
 5. Revise os lançamentos classificados automaticamente
@@ -146,16 +154,23 @@ Sistema especializado para processamento de extratos bancários destinado a escr
 2. Acesse o módulo de Lançamentos Contábeis no sistema Domínio
 3. Importe o arquivo seguindo os procedimentos do Domínio
 
-## 📝 Exemplo de Extrato
+## 📝 Arquivos de Exemplo
 
-Um arquivo de exemplo está disponível em: `/app/EXTRATO_EXEMPLO_NUBANK_012026.xlsx`
+Os seguintes arquivos de exemplo estão disponíveis para teste:
 
-Estrutura esperada:
-| Data       | Histórico                    | Valor    |
-|------------|------------------------------|----------|
-| 01/01/2026 | PIX RECEBIDO DE CLIENTE     | 1500.00  |
-| 02/01/2026 | PIX TRANSF FORNECEDOR       | -500.00  |
-| 03/01/2026 | TARIFA BANCARIA MENSAL      | -15.50   |
+- **`/app/TEMPLATE_PLANO_CONTAS.xlsx`** - Template para importação de plano de contas (9 contas exemplo)
+- **`/app/TEMPLATE_PLANO_CONTAS.csv`** - Mesmo template em formato CSV
+- **`/app/EXTRATO_NUBANK_JANEIRO_2026.pdf`** - PDF de extrato bancário (10 transações)
+- **`/app/EXTRATO_COMPLETO_NUBANK_012026.xlsx`** - Extrato em Excel (12 transações)
+
+### Formato do Template de Plano de Contas:
+| codigo | descricao              | tipo     |
+|--------|------------------------|----------|
+| 1.1.01 | Banco Itaú            | ATIVO    |
+| 4.1.01 | Receita de Vendas     | RECEITA  |
+| 3.1.01 | Despesas Operacionais | DESPESA  |
+
+**Tipos válidos:** ATIVO, PASSIVO, RECEITA, DESPESA
 
 ## 🎨 Design
 
