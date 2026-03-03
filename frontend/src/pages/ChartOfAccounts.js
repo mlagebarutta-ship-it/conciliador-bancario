@@ -308,6 +308,93 @@ export default function ChartOfAccounts() {
         </div>
       )}
       
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowImportModal(false)}>
+          <div className="bg-[#13141F] border border-white/10 rounded-xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-heading text-2xl font-semibold text-white">Importar Plano de Contas</h2>
+              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-lg p-4">
+                <p className="text-sm text-indigo-300 mb-2">📋 Formato do arquivo Excel/CSV:</p>
+                <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
+                  <li>Colunas obrigatórias: <span className="text-white font-mono">codigo, descricao, tipo</span></li>
+                  <li>Tipos válidos: ATIVO, PASSIVO, RECEITA, DESPESA</li>
+                  <li>Exemplo: 1.1.01, Banco Itaú, ATIVO</li>
+                </ul>
+                <button
+                  onClick={downloadTemplate}
+                  className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                >
+                  <Download size={14} />
+                  Baixar template de exemplo
+                </button>
+              </div>
+              
+              <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-indigo-500/50 transition-colors">
+                <Upload className="mx-auto text-slate-500 mb-3" size={40} />
+                <p className="text-white mb-2 text-sm">Selecione o arquivo</p>
+                <p className="text-xs text-slate-500 mb-4">Excel (.xlsx) ou CSV</p>
+                <input
+                  type="file"
+                  onChange={(e) => setImportFile(e.target.files[0])}
+                  accept=".xlsx,.xls,.csv"
+                  data-testid="import-file-input"
+                  className="hidden"
+                  id="import-file-upload"
+                />
+                <label
+                  htmlFor="import-file-upload"
+                  className="inline-block h-10 px-6 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
+                >
+                  Escolher Arquivo
+                </label>
+              </div>
+              
+              {importFile && (
+                <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="text-emerald-400" size={20} />
+                    <span className="text-white text-sm">{importFile.name}</span>
+                  </div>
+                  <button
+                    onClick={() => setImportFile(null)}
+                    className="text-rose-400 hover:text-rose-300"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportFile(null);
+                  }}
+                  className="flex-1 h-10 px-6 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleImportAccounts}
+                  disabled={!importFile}
+                  data-testid="confirmar-importacao-btn"
+                  className="flex-1 h-10 px-6 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Importar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="grid grid-cols-12 gap-6">
         {/* Charts List */}
         <div className="col-span-12 lg:col-span-5">
