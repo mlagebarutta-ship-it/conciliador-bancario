@@ -1,0 +1,168 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Creative Designer",
+    "mission": "Create a top 1% dark mode fintech dashboard for Brazilian accountants.",
+    "principles": [
+      "Fusion over Imitation: Mix Fintech precision with SaaS usability.",
+      "Emotion First: Trust, Accuracy, and Efficiency.",
+      "Content is King: Data readability is paramount.",
+      "Zoom In: Focus on the transaction details.",
+      "Negative Space: Use it to separate complex data tables."
+    ]
+  },
+  "theme": {
+    "mode": "dark",
+    "style": "Modern Fintech",
+    "visual_enhancers": [
+      "Subtle gradients (Dark Blue to Black)",
+      "Glassmorphism for overlays",
+      "1px borders with low opacity for structure",
+      "Glow effects for active states"
+    ]
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "default": "#0B0C15",
+        "paper": "#13141F",
+        "sidebar": "#0F1016"
+      },
+      "primary": {
+        "main": "#6366F1",
+        "light": "#818CF8",
+        "dark": "#4F46E5",
+        "contrast": "#FFFFFF"
+      },
+      "secondary": {
+        "main": "#1E293B",
+        "light": "#334155",
+        "dark": "#0F172A",
+        "contrast": "#F8FAFC"
+      },
+      "accent": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#F43F5E",
+        "info": "#0EA5E9"
+      },
+      "text": {
+        "primary": "#F8FAFC",
+        "secondary": "#94A3B8",
+        "muted": "#64748B"
+      },
+      "border": {
+        "default": "#1E293B",
+        "active": "#312E81"
+      }
+    },
+    "usage": {
+      "background": "bg-[#0B0C15]",
+      "sidebar": "bg-[#0F1016] border-r border-white/5",
+      "card": "bg-[#13141F] border border-white/5 shadow-sm",
+      "primary_button": "bg-indigo-500 hover:bg-indigo-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]",
+      "success_badge": "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+      "error_badge": "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "headings": "Outfit, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "usage": {
+      "h1": "font-heading text-4xl font-bold tracking-tight text-white",
+      "h2": "font-heading text-2xl font-semibold tracking-tight text-white",
+      "h3": "font-heading text-xl font-medium text-white",
+      "body": "font-sans text-sm text-slate-300 leading-relaxed",
+      "caption": "font-sans text-xs text-slate-500",
+      "data": "font-mono text-xs text-slate-200"
+    }
+  },
+  "layout": {
+    "structure": "Sidebar Layout",
+    "grid": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6",
+      "detail": "grid grid-cols-12 gap-6"
+    },
+    "spacing": {
+      "container": "p-6 md:p-8 lg:p-10",
+      "card": "p-6",
+      "section": "py-12"
+    }
+  },
+  "components": {
+    "Card": {
+      "style": "rounded-xl bg-[#13141F] border border-white/5 shadow-sm hover:border-indigo-500/20 transition-colors duration-300",
+      "usage": "Use for stats, forms, and summary sections."
+    },
+    "Table": {
+      "style": "w-full text-sm text-left",
+      "header": "text-xs uppercase text-slate-500 bg-white/5 font-medium",
+      "row": "border-b border-white/5 hover:bg-white/5 transition-colors",
+      "cell": "py-3 px-4",
+      "usage": "Use 'dense' padding for transaction lists. Font-mono for numbers."
+    },
+    "Button": {
+      "primary": "h-10 px-6 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)]",
+      "secondary": "h-10 px-6 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 transition-all",
+      "ghost": "h-10 px-4 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+    },
+    "Input": {
+      "style": "h-10 rounded-lg bg-[#0B0C15] border border-white/10 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+    },
+    "Badge": {
+      "style": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+      "variants": {
+        "success": "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+        "warning": "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+        "error": "bg-rose-500/10 text-rose-400 border border-rose-500/20",
+        "neutral": "bg-slate-500/10 text-slate-400 border border-slate-500/20"
+      }
+    }
+  },
+  "assets": {
+    "icons": "Lucide React (default)",
+    "images": [
+      {
+        "category": "hero",
+        "url": "https://images.unsplash.com/photo-1758518727613-00192aed759b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjBmaW5hbmNlJTIwdGVhbXxlbnwwfHx8fDE3NzI1NTkyOTh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern finance team collaborating"
+      },
+      {
+        "category": "empty_state",
+        "url": "https://images.unsplash.com/photo-1758518726741-6451f7f71348?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBvZmZpY2UlMjBmaW5hbmNlJTIwdGVhbXxlbnwwfHx8fDE3NzI1NTkyOTh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Business discussion"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install 'lucide-react' and 'recharts' if not present.",
+    "2. FONTS: Add 'Outfit' and 'JetBrains Mono' via Google Fonts in index.html or CSS.",
+    "3. THEME: Force DARK MODE. Do not implement a light mode toggle unless requested.",
+    "4. LAYOUT: Create a persistent SidebarLayout component.",
+    "5. PAGES: Implement Dashboard, Companies, Chart of Accounts, Processing Workflow, History.",
+    "6. TABLES: This is a data-heavy app. Ensure tables are dense, sortable, and have pagination.",
+    "7. FORMS: Use Shadcn Form components. Validate all inputs (CNPJ, Dates).",
+    "8. FEEDBACK: Use 'sonner' for toast notifications on all actions (success/error).",
+    "9. MOCK DATA: Create realistic mock data for bank statements and companies to populate the UI."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: 'transition: all'. This results in breaking transforms.",
+    "You MUST NOT center align the app container.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations.",
+    "NEVER use AI assistant Emoji characters for icons.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Components MUST use named exports.",
+    "Pages MUST use default exports.",
+    "Use 'sonner' for toasts."
+  ]
+}
