@@ -20,12 +20,13 @@ Sistema especializado para processamento de extratos bancários destinado a escr
 - Gerenciamento hierárquico de contas
 
 ### 3. **Processamento de Extratos**
-- **Upload de arquivos** nos formatos: OFX, Excel (.xlsx, .xls), CSV
+- **Upload de arquivos** nos formatos: **OFX, Excel (.xlsx, .xls), CSV, PDF**
 - **Workflow em 4 etapas:**
   1. Upload do Extrato
   2. Configuração (empresa, banco, período, plano de contas)
   3. Processamento automático
   4. Visualização de resultados
+- **Extração inteligente de PDF:** Sistema de OCR e parsing para extrair transações de PDFs de extratos bancários
 
 ### 4. **Classificação Automática**
 - Sistema inteligente de classificação baseado em palavras-chave
