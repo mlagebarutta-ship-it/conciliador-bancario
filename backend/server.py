@@ -467,126 +467,6 @@ async def classify_transaction(description: str, amount: float, trans_type: str,
         'status': 'CLASSIFICAR MANUALMENTE',
         'confidence': 0.0
     }
-    """Classificar transação baseado em regras e plano de contas real da empresa"""
-    
-    # Buscar contas do plano de contas
-    accounts = {}
-    account_items = await db.account_items.find({"chart_id": chart_id}, {"_id": 0}).to_list(1000)
-    
-    # Criar índices para busca rápida
-    accounts_by_code = {item['code']: item for item in account_items}
-    accounts_by_type = defaultdict(list)
-    for item in account_items:
-        accounts_by_type[item['account_type']].append(item)
-    
-    # Buscar regras de classificação (ordenadas por prioridade)
-    rules = await db.classification_rules.find({}, {"_id": 0}).sort("priority", -1).to_list(100)
-    
-    description_upper = description.upper()
-    
-    # Tentar aplicar regras customizadas
-    for rule in rules:
-        if rule['keyword'].upper() in description_upper:
-            debit_code = rule.get('debit_account_code')
-            credit_code = rule.get('credit_account_code')
-            
-            # Validar se os códigos existem no plano
-            if debit_code and credit_code:
-                if debit_code in accounts_by_code and credit_code in accounts_by_code:
-                    return {
-                        'debit_account': debit_code,
-                        'credit_account': credit_code,
-                        'status': 'CLASSIFICADO'
-                    }
-            
-            # Se a regra não tem códigos ou códigos inválidos, tentar buscar contas adequadas
-            # Lógica: Para PIX RECEBIDO, débito é banco e crédito é receita
-            if trans_type == 'C':  # Crédito/Entrada
-                # Buscar conta de banco (ATIVO) para débito
-                banco_conta = None
-                for conta in accounts_by_type['ATIVO']:
-                    if 'BANCO' in conta['description'].upper() or 'CAIXA' in conta['description'].upper():
-                        banco_conta = conta['code']
-                        break
-                
-                # Buscar conta de receita para crédito
-                receita_conta = None
-                for conta in accounts_by_type['RECEITA']:
-                    if 'RECEITA' in conta['description'].upper() or 'VENDA' in conta['description'].upper():
-                        receita_conta = conta['code']
-                        break
-                
-                if banco_conta and receita_conta:
-                    return {
-                        'debit_account': banco_conta,
-                        'credit_account': receita_conta,
-                        'status': 'CLASSIFICADO'
-                    }
-            
-            elif trans_type == 'D':  # Débito/Saída
-                # Buscar conta de despesa específica baseada na palavra-chave
-                despesa_conta = None
-                keyword_lower = rule['keyword'].lower()
-                
-                for conta in accounts_by_type['DESPESA']:
-                    desc_lower = conta['description'].lower()
-                    # Match inteligente baseado na palavra-chave
-                    if 'folha' in keyword_lower or 'sispag' in keyword_lower or 'salario' in keyword_lower:
-                        if 'salario' in desc_lower or 'folha' in desc_lower or 'pessoal' in desc_lower:
-                            despesa_conta = conta['code']
-                            break
-                    elif 'tarifa' in keyword_lower or 'iof' in keyword_lower:
-                        if 'bancaria' in desc_lower or 'tarifa' in desc_lower:
-                            despesa_conta = conta['code']
-                            break
-                    elif 'aluguel' in keyword_lower:
-                        if 'aluguel' in desc_lower:
-                            despesa_conta = conta['code']
-                            break
-                    elif 'energia' in keyword_lower or 'agua' in keyword_lower or 'telefone' in keyword_lower:
-                        if any(x in desc_lower for x in ['energia', 'agua', 'telefone', 'operacion']):
-                            despesa_conta = conta['code']
-                            break
-                
-                # Se não encontrou conta específica, pegar primeira conta de despesa
-                if not despesa_conta and accounts_by_type['DESPESA']:
-                    despesa_conta = accounts_by_type['DESPESA'][0]['code']
-                
-                # Buscar conta de banco para crédito
-                banco_conta = None
-                for conta in accounts_by_type['ATIVO']:
-                    if 'BANCO' in conta['description'].upper() or 'CAIXA' in conta['description'].upper():
-                        banco_conta = conta['code']
-                        break
-                
-                # Para impostos (DAS, GPS, DARF), buscar conta de passivo
-                if any(x in keyword_lower for x in ['das', 'gps', 'darf', 'imposto']):
-                    imposto_conta = None
-                    for conta in accounts_by_type['PASSIVO']:
-                        desc_lower = conta['description'].lower()
-                        if any(x in desc_lower for x in ['imposto', 'simples', 'inss', 'contribui']):
-                            imposto_conta = conta['code']
-                            break
-                    
-                    if imposto_conta and banco_conta:
-                        return {
-                            'debit_account': imposto_conta,
-                            'credit_account': banco_conta,
-                            'status': 'CLASSIFICADO'
-                        }
-                
-                if despesa_conta and banco_conta:
-                    return {
-                        'debit_account': despesa_conta,
-                        'credit_account': banco_conta,
-                        'status': 'CLASSIFICADO'
-                    }
-    
-    return {
-        'debit_account': None,
-        'credit_account': None,
-        'status': 'CLASSIFICAR MANUALMENTE'
-    }
 
 # ============= ROUTES =============
 
@@ -975,7 +855,54 @@ async def update_transaction(transaction_id: str, update: TransactionUpdate):
     result = await db.transactions.update_one({"id": transaction_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
     trans = await db.transactions.find_one({"id": transaction_id}, {"_id": 0})
+    
+    # Se a transação foi classificada manualmente, salvar no histórico de aprendizado
+    if trans and update.debit_account and update.credit_account:
+        # Buscar o statement para obter company_id
+        statement = await db.bank_statements.find_one({"id": trans['statement_id']}, {"_id": 0})
+        
+        if statement:
+            company_id = statement['company_id']
+            description = trans['description']
+            trans_type = trans['transaction_type']
+            
+            # Verificar se já existe um histórico com descrição similar
+            existing_history = await db.classification_history.find_one({
+                "company_id": company_id,
+                "description_pattern": description
+            }, {"_id": 0})
+            
+            if existing_history:
+                # Atualizar registro existente
+                await db.classification_history.update_one(
+                    {"id": existing_history['id']},
+                    {
+                        "$set": {
+                            "debit_account": update.debit_account,
+                            "credit_account": update.credit_account,
+                            "last_used": datetime.now(timezone.utc).isoformat()
+                        },
+                        "$inc": {"usage_count": 1}
+                    }
+                )
+                logger.info(f"Histórico de classificação atualizado para: {description}")
+            else:
+                # Criar novo registro no histórico
+                history_entry = ClassificationHistory(
+                    company_id=company_id,
+                    description_pattern=description,
+                    transaction_type=trans_type,
+                    debit_account=update.debit_account,
+                    credit_account=update.credit_account
+                )
+                history_doc = history_entry.model_dump()
+                history_doc['created_at'] = history_doc['created_at'].isoformat()
+                history_doc['last_used'] = history_doc['last_used'].isoformat()
+                await db.classification_history.insert_one(history_doc)
+                logger.info(f"Novo histórico de classificação criado para: {description}")
+    
     return trans
 
 @api_router.get("/bank-statements/{statement_id}/export")
