@@ -170,6 +170,45 @@ def clean_cnpj(cnpj: str) -> str:
     """Remove caracteres especiais do CNPJ"""
     return re.sub(r'[^0-9]', '', cnpj)
 
+def parse_brazilian_number(value_str: str) -> float:
+    """Converte número no formato brasileiro para float"""
+    if not value_str:
+        return 0.0
+    
+    value_str = str(value_str).strip()
+    
+    # Verificar se é negativo (entre parênteses ou com sinal)
+    is_negative = False
+    if value_str.startswith('(') and value_str.endswith(')'):
+        is_negative = True
+        value_str = value_str[1:-1]
+    elif value_str.startswith('-'):
+        is_negative = True
+        value_str = value_str[1:]
+    
+    # Remover R$ e espaços
+    value_str = value_str.replace('R$', '').replace(' ', '').strip()
+    
+    # Detectar formato (brasileiro: 1.234,56 ou americano: 1,234.56)
+    if ',' in value_str and '.' in value_str:
+        # Verificar qual vem por último
+        if value_str.rfind(',') > value_str.rfind('.'):
+            # Formato brasileiro: 1.234,56
+            value_str = value_str.replace('.', '').replace(',', '.')
+        else:
+            # Formato americano: 1,234.56
+            value_str = value_str.replace(',', '')
+    elif ',' in value_str:
+        # Só tem vírgula - provavelmente brasileiro
+        value_str = value_str.replace(',', '.')
+    # Se só tem ponto, manter como está (formato americano)
+    
+    try:
+        result = float(value_str)
+        return -result if is_negative else result
+    except:
+        return 0.0
+
 def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
     """Parse PDF bank statement - Suporta múltiplos formatos de extrato"""
     try:
