@@ -463,7 +463,9 @@ async def import_chart_accounts(
     chart_id: str,
     file: UploadFile = File(...)
 ):
-    """Importar plano de contas em massa via Excel"""
+    """Importar plano de contas em massa via Excel
+    Formato esperado: Código | Descrição | Classificação | Tipo
+    """
     try:
         # Verificar se o plano existe
         chart = await db.chart_of_accounts.find_one({"id": chart_id}, {"_id": 0})
@@ -484,133 +486,92 @@ async def import_chart_accounts(
                 raise HTTPException(status_code=400, detail="Erro ao ler arquivo. Use formato XLSX ou XLS válido")
         
         # Normalizar nomes de colunas
-        df.columns = df.columns.str.strip().str.lower()
+        df.columns = df.columns.str.strip()
         
-        # Detectar formato do arquivo
-        # Formato 1: codigo, descricao, tipo
-        # Formato 2: código (número), ativo/passivo/receita/despesa (descrição), classificação (código contábil)
+        # Verificar formato: Código, Descrição, Classificação, Tipo
+        required_columns = ['Código', 'Descrição', 'Classificação', 'Tipo']
         
+        # Permitir variações de nomenclatura
+        column_mapping = {
+            'codigo': 'Código',
+            'código': 'Código',
+            'descricao': 'Descrição',
+            'descrição': 'Descrição',
+            'classificacao': 'Classificação',
+            'classificação': 'Classificação',
+            'tipo': 'Tipo'
+        }
+        
+        # Mapear colunas
+        df.columns = [column_mapping.get(col.lower(), col) for col in df.columns]
+        
+        # Validar se todas as colunas obrigatórias existem
+        missing_cols = [col for col in required_columns if col not in df.columns]
+        if missing_cols:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Arquivo deve conter as colunas: Código, Descrição, Classificação, Tipo. Faltando: {', '.join(missing_cols)}"
+            )
+        
+        # Processar e inserir contas
         imported_count = 0
         errors = []
         
-        # Verificar se é o formato com "classificação"
-        if 'classificação' in df.columns or 'classificacao' in df.columns:
-            # Formato novo: Código | Descrição | Classificação
-            classif_col = 'classificação' if 'classificação' in df.columns else 'classificacao'
-            
-            # Encontrar coluna de descrição (pode ser ATIVO, PASSIVO, RECEITA, DESPESA, etc.)
-            desc_col = None
-            for col in df.columns:
-                if col not in ['código', 'codigo', classif_col] and df[col].notna().sum() > 0:
-                    desc_col = col
-                    break
-            
-            if not desc_col:
-                raise HTTPException(status_code=400, detail="Não foi possível identificar a coluna de descrição")
-            
-            for idx, row in df.iterrows():
-                try:
-                    # Código contábil está na coluna "classificação"
-                    codigo = str(row[classif_col]).strip()
-                    descricao = str(row[desc_col]).strip()
-                    
-                    # Determinar tipo baseado no primeiro dígito do código
-                    primeiro_digito = codigo[0] if codigo else '0'
-                    
-                    if primeiro_digito == '1':
-                        tipo = 'ATIVO'
-                    elif primeiro_digito == '2':
-                        tipo = 'PASSIVO'
-                    elif primeiro_digito == '3':
-                        tipo = 'RECEITA'
-                    elif primeiro_digito == '4':
-                        tipo = 'DESPESA'
-                    else:
-                        errors.append(f"Linha {idx + 2}: Código '{codigo}' não identificado. Primeiro dígito deve ser 1(ATIVO), 2(PASSIVO), 3(RECEITA) ou 4(DESPESA)")
-                        continue
-                    
-                    # Verificar se conta já existe
-                    existing = await db.account_items.find_one({
-                        "chart_id": chart_id,
-                        "code": codigo
-                    }, {"_id": 0})
-                    
-                    if existing:
-                        # Atualizar conta existente
-                        await db.account_items.update_one(
-                            {"chart_id": chart_id, "code": codigo},
-                            {"$set": {
-                                "description": descricao,
-                                "account_type": tipo
-                            }}
-                        )
-                    else:
-                        # Criar nova conta
-                        account = AccountItem(
-                            chart_id=chart_id,
-                            code=codigo,
-                            description=descricao,
-                            account_type=tipo
-                        )
-                        doc = account.model_dump()
-                        doc['created_at'] = doc['created_at'].isoformat()
-                        await db.account_items.insert_one(doc)
-                    
-                    imported_count += 1
-                    
-                except Exception as e:
-                    errors.append(f"Linha {idx + 2}: {str(e)}")
-        
-        else:
-            # Formato antigo: codigo, descricao, tipo
-            required_columns = ['codigo', 'descricao', 'tipo']
-            
-            if not all(col in df.columns for col in required_columns):
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Arquivo deve conter as colunas: {', '.join(required_columns)} OU Código, Descrição (ATIVO/PASSIVO/etc), Classificação"
-                )
-            
-            for idx, row in df.iterrows():
-                try:
-                    # Validar tipo
-                    tipo = str(row['tipo']).upper().strip()
-                    if tipo not in ['ATIVO', 'PASSIVO', 'RECEITA', 'DESPESA']:
-                        errors.append(f"Linha {idx + 2}: Tipo inválido '{tipo}'. Use: ATIVO, PASSIVO, RECEITA ou DESPESA")
-                        continue
-                    
-                    # Verificar se conta já existe
-                    codigo = str(row['codigo']).strip()
-                    existing = await db.account_items.find_one({
-                        "chart_id": chart_id,
-                        "code": codigo
-                    }, {"_id": 0})
-                    
-                    if existing:
-                        # Atualizar conta existente
-                        await db.account_items.update_one(
-                            {"chart_id": chart_id, "code": codigo},
-                            {"$set": {
-                                "description": str(row['descricao']).strip(),
-                                "account_type": tipo
-                            }}
-                        )
-                    else:
-                        # Criar nova conta
-                        account = AccountItem(
-                            chart_id=chart_id,
-                            code=codigo,
-                            description=str(row['descricao']).strip(),
-                            account_type=tipo
-                        )
-                        doc = account.model_dump()
-                        doc['created_at'] = doc['created_at'].isoformat()
-                        await db.account_items.insert_one(doc)
-                    
-                    imported_count += 1
-                    
-                except Exception as e:
-                    errors.append(f"Linha {idx + 2}: {str(e)}")
+        for idx, row in df.iterrows():
+            try:
+                # Validar dados
+                codigo_seq = str(row['Código']).strip() if pd.notna(row['Código']) else ''
+                descricao = str(row['Descrição']).strip() if pd.notna(row['Descrição']) else ''
+                classificacao = str(row['Classificação']).strip() if pd.notna(row['Classificação']) else ''
+                tipo = str(row['Tipo']).upper().strip() if pd.notna(row['Tipo']) else ''
+                
+                # Validações
+                if not classificacao or classificacao == 'nan':
+                    errors.append(f"Linha {idx + 2}: Classificação vazia")
+                    continue
+                
+                if not descricao or descricao == 'nan':
+                    errors.append(f"Linha {idx + 2}: Descrição vazia")
+                    continue
+                
+                if tipo not in ['ATIVO', 'PASSIVO', 'RECEITA', 'DESPESA']:
+                    errors.append(f"Linha {idx + 2}: Tipo '{tipo}' inválido. Use: ATIVO, PASSIVO, RECEITA ou DESPESA")
+                    continue
+                
+                # Usar a Classificação como código da conta (ex: 1.1.1.01.0001)
+                codigo_conta = classificacao
+                
+                # Verificar se conta já existe
+                existing = await db.account_items.find_one({
+                    "chart_id": chart_id,
+                    "code": codigo_conta
+                }, {"_id": 0})
+                
+                if existing:
+                    # Atualizar conta existente
+                    await db.account_items.update_one(
+                        {"chart_id": chart_id, "code": codigo_conta},
+                        {"$set": {
+                            "description": descricao,
+                            "account_type": tipo
+                        }}
+                    )
+                else:
+                    # Criar nova conta
+                    account = AccountItem(
+                        chart_id=chart_id,
+                        code=codigo_conta,
+                        description=descricao,
+                        account_type=tipo
+                    )
+                    doc = account.model_dump()
+                    doc['created_at'] = doc['created_at'].isoformat()
+                    await db.account_items.insert_one(doc)
+                
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Linha {idx + 2}: {str(e)}")
         
         return {
             "message": f"Importação concluída: {imported_count} contas processadas",
