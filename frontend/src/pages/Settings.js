@@ -10,6 +10,7 @@ export default function Settings() {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     keyword: '',
     debit_account_code: '',
