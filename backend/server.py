@@ -404,6 +404,186 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao processar PDF: {str(e)}")
 
+def parse_santander_format(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """Parser especializado para extratos do Santander"""
+    transactions = []
+    
+    # No formato Santander:
+    # - Coluna ~5 (Unnamed: 5): Data
+    # - Coluna ~6 (Unnamed: 6): Descrição
+    # - Coluna ~9 (Unnamed: 9): Entradas (créditos)
+    # - Coluna ~14 (Unnamed: 14): Saídas (débitos) - valores com "-" no final
+    
+    # Identificar colunas por conteúdo
+    date_col = None
+    desc_col = None
+    credit_col = None
+    debit_col = None
+    
+    for i, col in enumerate(df.columns):
+        col_data = df.iloc[:30, i].dropna()  # Primeiras 30 linhas
+        
+        for val in col_data:
+            val_str = str(val).strip()
+            
+            # Detectar coluna de data (DD/MM ou DD/MM/YYYY)
+            if re.match(r'^\d{2}/\d{2}(/\d{4})?$', val_str) and date_col is None:
+                date_col = i
+                logger.info(f"Santander: Coluna de data detectada no índice {i}")
+                break
+            
+            # Detectar coluna de entradas/créditos
+            if 'entradas' in val_str.lower() or 'créditos' in val_str.lower() or 'creditos' in val_str.lower():
+                credit_col = i
+                logger.info(f"Santander: Coluna de créditos detectada no índice {i}")
+                break
+            
+            # Detectar coluna de saídas/débitos
+            if 'saídas' in val_str.lower() or 'saidas' in val_str.lower() or 'débitos' in val_str.lower() or 'debitos' in val_str.lower():
+                debit_col = i
+                logger.info(f"Santander: Coluna de débitos detectada no índice {i}")
+                break
+    
+    # Se não encontrou pelas palavras-chave, usar posições típicas do Santander
+    if date_col is None:
+        # Procurar coluna com datas
+        for i in range(len(df.columns)):
+            col_data = df.iloc[:50, i].dropna()
+            date_count = 0
+            for val in col_data:
+                if re.match(r'^\d{2}/\d{2}(/\d{4})?$', str(val).strip()):
+                    date_count += 1
+            if date_count >= 3:
+                date_col = i
+                break
+    
+    if debit_col is None:
+        # Procurar coluna com valores terminando em "-"
+        for i in range(len(df.columns)):
+            col_data = df.iloc[:50, i].dropna()
+            neg_count = 0
+            for val in col_data:
+                val_str = str(val).strip()
+                if val_str.endswith('-') and re.search(r'\d', val_str):
+                    neg_count += 1
+            if neg_count >= 3:
+                debit_col = i
+                logger.info(f"Santander: Coluna de débitos detectada por padrão '-' no índice {i}")
+                break
+    
+    if credit_col is None:
+        # Procurar coluna com valores numéricos positivos (sem "-" no final)
+        for i in range(len(df.columns)):
+            if i == debit_col or i == date_col:
+                continue
+            col_data = df.iloc[:50, i].dropna()
+            num_count = 0
+            for val in col_data:
+                val_str = str(val).strip()
+                try:
+                    if isinstance(val, (int, float)) and val > 0:
+                        num_count += 1
+                    elif re.match(r'^[\d.,]+$', val_str) and not val_str.endswith('-'):
+                        num_count += 1
+                except:
+                    pass
+            if num_count >= 3:
+                credit_col = i
+                logger.info(f"Santander: Coluna de créditos detectada por padrão numérico no índice {i}")
+                break
+    
+    # Encontrar coluna de descrição (próxima à de data, com textos)
+    if date_col is not None:
+        for i in [date_col + 1, date_col + 2, date_col - 1]:
+            if 0 <= i < len(df.columns) and i != credit_col and i != debit_col:
+                col_data = df.iloc[:30, i].dropna()
+                text_count = 0
+                for val in col_data:
+                    if isinstance(val, str) and len(val) > 5 and not re.match(r'^[\d.,\-+\s]+$', val):
+                        text_count += 1
+                if text_count >= 3:
+                    desc_col = i
+                    logger.info(f"Santander: Coluna de descrição detectada no índice {i}")
+                    break
+    
+    logger.info(f"Santander Parser - date_col: {date_col}, desc_col: {desc_col}, credit_col: {credit_col}, debit_col: {debit_col}")
+    
+    # Variável para manter a última data válida
+    last_date = None
+    
+    # Processar linhas
+    for idx, row in df.iterrows():
+        # Extrair data
+        date_val = None
+        if date_col is not None:
+            raw_date = row.iloc[date_col]
+            if pd.notna(raw_date):
+                date_str = str(raw_date).strip()
+                date_match = re.match(r'^(\d{2}/\d{2})(/\d{4})?$', date_str)
+                if date_match:
+                    date_val = date_match.group(1)
+                    if date_match.group(2):
+                        date_val += date_match.group(2)
+                    else:
+                        date_val += "/2025"  # Ano padrão
+                    last_date = date_val
+        
+        # Usar última data válida se não tiver data na linha
+        if date_val is None and last_date is not None:
+            date_val = last_date
+        
+        if date_val is None:
+            continue
+        
+        # Extrair descrição
+        description = ""
+        if desc_col is not None and pd.notna(row.iloc[desc_col]):
+            description = str(row.iloc[desc_col]).strip()
+        
+        # Se descrição vazia, ignorar linhas de cabeçalho/resumo
+        if not description or 'saldo' in description.lower() and 'anterior' in description.lower():
+            continue
+        if any(x in description.lower() for x in ['total', 'entradas', 'saídas', 'créditos', 'débitos']):
+            continue
+        
+        # Extrair valores de crédito e débito
+        amount = 0
+        trans_type = None
+        
+        # Verificar débito primeiro (valores com "-" no final)
+        if debit_col is not None and pd.notna(row.iloc[debit_col]):
+            debit_str = str(row.iloc[debit_col]).strip()
+            if debit_str and not any(x in debit_str.lower() for x in ['saída', 'saida', 'débito', 'debito']):
+                debit_val = parse_brazilian_number(debit_str)
+                if debit_val != 0:
+                    amount = abs(debit_val)
+                    trans_type = 'D'
+        
+        # Se não tiver débito, verificar crédito
+        if trans_type is None and credit_col is not None and pd.notna(row.iloc[credit_col]):
+            credit_val = row.iloc[credit_col]
+            credit_str = str(credit_val).strip()
+            if credit_str and not any(x in credit_str.lower() for x in ['entrada', 'crédito', 'credito']):
+                parsed = parse_brazilian_number(credit_str)
+                if parsed != 0:
+                    amount = abs(parsed)
+                    trans_type = 'C'
+        
+        # Adicionar transação se válida
+        if description and amount > 0 and trans_type:
+            transactions.append({
+                'date': date_val,
+                'description': description,
+                'amount': amount,
+                'transaction_type': trans_type
+            })
+    
+    if not transactions:
+        raise HTTPException(status_code=400, detail="Não foi possível extrair transações do arquivo Santander.")
+    
+    logger.info(f"Santander Parser: {len(transactions)} transações extraídas")
+    return transactions
+
 def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
     """Parse Excel/CSV bank statement - Suporta múltiplos formatos"""
     try:
