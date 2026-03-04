@@ -177,7 +177,11 @@ def parse_brazilian_number(value_str: str) -> float:
     
     value_str = str(value_str).strip()
     
-    # Verificar se é negativo (entre parênteses ou com sinal)
+    # Ignorar cabeçalhos e textos
+    if any(x in value_str.lower() for x in ['entradas', 'saídas', 'saidas', 'créditos', 'creditos', 'débitos', 'debitos', 'saldo', 'total']):
+        return 0.0
+    
+    # Verificar se é negativo (entre parênteses, com sinal no início, ou com sinal NO FINAL)
     is_negative = False
     if value_str.startswith('(') and value_str.endswith(')'):
         is_negative = True
@@ -185,6 +189,11 @@ def parse_brazilian_number(value_str: str) -> float:
     elif value_str.startswith('-'):
         is_negative = True
         value_str = value_str[1:]
+    elif value_str.endswith('-'):  # FORMATO SANTANDER: 415,84-
+        is_negative = True
+        value_str = value_str[:-1]
+    elif value_str.endswith('+'):
+        value_str = value_str[:-1]
     
     # Remover R$ e espaços
     value_str = value_str.replace('R$', '').replace(' ', '').strip()
