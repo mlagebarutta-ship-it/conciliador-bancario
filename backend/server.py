@@ -774,8 +774,8 @@ async def export_statement(statement_id: str):
     ws = wb.active
     ws.title = "Lançamentos"
     
-    # Cabeçalhos
-    headers = ['Data', 'Histórico', 'Documento', 'Valor', 'Tipo', 'Conta Débito', 'Conta Crédito', 'Status', 'Observação']
+    # Cabeçalhos na ordem correta: Descrição, Data, Valor, Conta Débito, Conta Crédito, Histórico
+    headers = ['Descrição', 'Data', 'Valor', 'Conta Débito', 'Conta Crédito', 'Histórico']
     ws.append(headers)
     
     # Estilizar cabeçalho
@@ -790,27 +790,21 @@ async def export_statement(statement_id: str):
     for trans in transactions:
         valor = trans['amount'] if trans['transaction_type'] == 'C' else -trans['amount']
         ws.append([
+            'IMPLANTAÇÃO DE SALDO',  # Descrição fixa
             trans['date'],
-            trans['description'],
-            trans.get('document', ''),
             valor,
-            trans['transaction_type'],
             trans.get('debit_account', ''),
             trans.get('credit_account', ''),
-            trans['status'],
-            trans.get('notes', '')
+            trans['description']  # Histórico é a descrição original
         ])
     
     # Ajustar largura das colunas
-    ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 50
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 15
-    ws.column_dimensions['E'].width = 8
-    ws.column_dimensions['F'].width = 15
-    ws.column_dimensions['G'].width = 15
-    ws.column_dimensions['H'].width = 25
-    ws.column_dimensions['I'].width = 30
+    ws.column_dimensions['A'].width = 25  # Descrição
+    ws.column_dimensions['B'].width = 12  # Data
+    ws.column_dimensions['C'].width = 15  # Valor
+    ws.column_dimensions['D'].width = 15  # Conta Débito
+    ws.column_dimensions['E'].width = 15  # Conta Crédito
+    ws.column_dimensions['F'].width = 50  # Histórico
     
     # Salvar arquivo em formato XLSX
     cnpj_clean = clean_cnpj(company['cnpj'])
