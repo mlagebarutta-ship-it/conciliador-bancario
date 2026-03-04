@@ -37,14 +37,34 @@ export default function Settings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/classification-rules`, formData);
-      toast.success('Regra criada com sucesso');
+      if (editingId) {
+        // Atualizar regra existente
+        await axios.put(`${API}/classification-rules/${editingId}`, formData);
+        toast.success('Regra atualizada com sucesso');
+      } else {
+        // Criar nova regra
+        await axios.post(`${API}/classification-rules`, formData);
+        toast.success('Regra criada com sucesso');
+      }
       setShowForm(false);
+      setEditingId(null);
       setFormData({ keyword: '', debit_account_code: '', credit_account_code: '', description: '', priority: 0 });
       loadRules();
     } catch (error) {
-      toast.error('Erro ao criar regra');
+      toast.error(editingId ? 'Erro ao atualizar regra' : 'Erro ao criar regra');
     }
+  };
+  
+  const handleEdit = (rule) => {
+    setFormData({
+      keyword: rule.keyword,
+      debit_account_code: rule.debit_account_code || '',
+      credit_account_code: rule.credit_account_code || '',
+      description: rule.description || '',
+      priority: rule.priority || 0
+    });
+    setEditingId(rule.id);
+    setShowForm(true);
   };
   
   const handleDelete = async (ruleId) => {
