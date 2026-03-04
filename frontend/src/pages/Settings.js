@@ -257,30 +257,6 @@ export default function Settings() {
           </div>
         )}
       </div>
-      
-      {/* Default Rules Info */}
-      <div className="mt-8 bg-[#13141F] border border-white/5 rounded-xl p-6">
-        <h3 className="font-heading text-lg font-semibold text-white mb-4">Regras Padrão do Sistema</h3>
-        <p className="text-sm text-slate-400 mb-4">O sistema possui as seguintes regras padrão que são aplicadas automaticamente:</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            'PIX RECEBIDO → Receita',
-            'PIX ENVIADO → Despesa',
-            'SISPAG/FOLHA → Pessoal',
-            'PRO LABORE → Pro-Labore',
-            'TARIFA/IOF → Despesas Bancárias',
-            'DAS → Impostos',
-            'GPS → INSS',
-            'DARF → Impostos Federais',
-            'ENERGIA/ÁGUA/TELEFONE → Operacionais',
-            'ALUGUEL → Aluguel'
-          ].map((rule, idx) => (
-            <div key={idx} className="px-3 py-2 bg-white/5 rounded-lg text-xs text-slate-300">
-              {rule}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
