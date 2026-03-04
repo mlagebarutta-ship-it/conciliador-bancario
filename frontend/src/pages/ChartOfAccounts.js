@@ -321,18 +321,34 @@ export default function ChartOfAccounts() {
             
             <div className="space-y-4">
               <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-lg p-4">
-                <p className="text-sm text-indigo-300 mb-2">📋 Formato do arquivo Excel/CSV:</p>
-                <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
-                  <li>Colunas obrigatórias: <span className="text-white font-mono">codigo, descricao, tipo</span></li>
-                  <li>Tipos válidos: ATIVO, PASSIVO, RECEITA, DESPESA</li>
-                  <li>Exemplo: 1.1.01, Banco Itaú, ATIVO</li>
-                </ul>
+                <p className="text-sm text-indigo-300 mb-2">📋 Formatos aceitos para importação:</p>
+                
+                <div className="text-xs text-slate-400 space-y-3">
+                  <div>
+                    <p className="text-white font-semibold mb-1">Formato 1 - Simplificado:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Colunas: <span className="text-white font-mono">codigo, descricao, tipo</span></li>
+                      <li>Tipos válidos: ATIVO, PASSIVO, RECEITA, DESPESA</li>
+                      <li>Exemplo: 1.1.01, Caixa, ATIVO</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <p className="text-white font-semibold mb-1">Formato 2 - Sistema Domínio:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Colunas: <span className="text-white font-mono">Código, Descrição, Classificação</span></li>
+                      <li>O tipo é detectado automaticamente pelo código (1=ATIVO, 2=PASSIVO, 3=RECEITA, 4=DESPESA)</li>
+                      <li>Exemplo: 1, Caixa, 1.1.1.01.0001</li>
+                    </ul>
+                  </div>
+                </div>
+                
                 <button
                   onClick={downloadTemplate}
                   className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                 >
                   <Download size={14} />
-                  Baixar template de exemplo
+                  Baixar template formato simplificado
                 </button>
               </div>
               
