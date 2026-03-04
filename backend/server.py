@@ -343,11 +343,11 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
                     
                     date_str = date_match.group(1)
                     if len(date_str) == 5:
-                        date_str += "/2026"
+                        date_str += "/2025"
                     
-                    # Buscar múltiplos valores na linha (pode ter débito e crédito)
-                    # Formato brasileiro: 1.234,56 ou -1.234,56 ou (1.234,56)
-                    value_matches = re.findall(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2}|\(\d{1,3}(?:\.\d{3})*,\d{2}\))', line)
+                    # Buscar múltiplos valores na linha
+                    # Formato brasileiro: 1.234,56 ou -1.234,56 ou (1.234,56) ou 1.234,56- (Santander)
+                    value_matches = re.findall(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2}-?|\(\d{1,3}(?:\.\d{3})*,\d{2}\))', line)
                     
                     if not value_matches:
                         continue
@@ -355,8 +355,8 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
                     # Pegar o último valor encontrado (geralmente é o valor da transação)
                     value_str = value_matches[-1]
                     
-                    # Valor entre parênteses é negativo
-                    is_negative = value_str.startswith('(') or value_str.startswith('-')
+                    # Detectar se é negativo: parênteses, sinal no início OU no final (Santander)
+                    is_negative = value_str.startswith('(') or value_str.startswith('-') or value_str.endswith('-')
                     value_str = value_str.replace('(', '').replace(')', '').replace('.', '').replace(',', '.').replace(' ', '').replace('-', '').replace('+', '')
                     
                     try:
@@ -372,6 +372,10 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
                     description = line[date_end:value_start].strip() if value_start > date_end else ""
                     description = re.sub(r'\s+', ' ', description)
                     
+                    # Ignorar linhas de cabeçalho/resumo
+                    if any(x in description.lower() for x in ['saldo', 'total', 'anterior', 'entradas', 'saídas']):
+                        continue
+                    
                     # Verificar indicadores de débito/crédito na linha
                     line_upper = line.upper()
                     trans_type = None
@@ -383,6 +387,7 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
                         trans_type = 'C'
                         amount = abs(amount)
                     else:
+                        # Usar o sinal do valor para determinar o tipo
                         trans_type = 'C' if amount > 0 else 'D'
                         amount = abs(amount)
                     
