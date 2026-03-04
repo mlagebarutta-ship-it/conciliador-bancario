@@ -100,8 +100,12 @@ export default function Settings() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
           <div className="bg-[#13141F] border border-white/10 rounded-xl p-6 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-heading text-2xl font-semibold text-white">Nova Regra de Classificação</h2>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-white">
+              <h2 className="font-heading text-2xl font-semibold text-white">{editingId ? 'Editar Regra de Classificação' : 'Nova Regra de Classificação'}</h2>
+              <button onClick={() => {
+                setShowForm(false);
+                setEditingId(null);
+                setFormData({ keyword: '', debit_account_code: '', credit_account_code: '', description: '', priority: 0 });
+              }} className="text-slate-400 hover:text-white">
                 <X size={24} />
               </button>
             </div>
