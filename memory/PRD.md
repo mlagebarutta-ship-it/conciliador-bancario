@@ -46,6 +46,19 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 - Página de Plano de Contas
 - Página de Configurações (Regras de Classificação)
 
+## Formatos de Arquivo Suportados
+
+### Excel/CSV
+O sistema detecta automaticamente:
+- **Coluna única de Valor:** Positivo = Crédito, Negativo = Débito
+- **Colunas separadas:** Débito e Crédito em colunas diferentes
+- **Coluna de Tipo:** D/C ou Débito/Crédito para identificar a natureza
+
+### PDF
+- Extração de tabelas estruturadas
+- Detecção de padrões de extrato bancário
+- Suporte a valores entre parênteses como negativos
+
 ## APIs Principais
 
 ### Classificação Inteligente
