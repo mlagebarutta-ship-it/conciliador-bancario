@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Plus, Settings as SettingsIcon, Trash2, X } from 'lucide-react';
+import { Plus, Settings as SettingsIcon, Trash2, X, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
