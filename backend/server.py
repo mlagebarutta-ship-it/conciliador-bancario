@@ -435,6 +435,19 @@ def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
         # Limpar dados
         df = df.dropna(how='all')
         
+        # =====================================================
+        # DETECÇÃO DE FORMATO SANTANDER (colunas Unnamed)
+        # =====================================================
+        unnamed_cols = [col for col in df.columns if 'Unnamed' in str(col) or 'unnamed' in str(col).lower()]
+        
+        if len(unnamed_cols) > 10:
+            logger.info("Detectado formato Santander - processando com parser especializado")
+            return parse_santander_format(df)
+        
+        # =====================================================
+        # FORMATO PADRÃO COM COLUNAS NOMEADAS
+        # =====================================================
+        
         # Normalizar nomes de colunas
         df.columns = [str(col).strip().upper() for col in df.columns]
         
