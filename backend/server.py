@@ -124,6 +124,18 @@ class TransactionUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
 
+class ClassificationHistory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    company_id: str
+    description_pattern: str  # Descrição original da transação
+    transaction_type: str  # C ou D
+    debit_account: str
+    credit_account: str
+    usage_count: int = 1  # Quantas vezes foi usada
+    last_used: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class BankStatement(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
