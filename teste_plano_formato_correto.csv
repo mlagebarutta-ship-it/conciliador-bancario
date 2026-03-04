@@ -1,0 +1,11 @@
+Código,Descrição,Classificação,Tipo
+1,Caixa,1.1.1.01.0001,ATIVO
+3,Banco Itaú c/ Movimento,1.1.1.02.0001,ATIVO
+6,(-) Cheques a Compensar,1.1.1.02.0003,ATIVO
+21,Duplicatas/Cheques a Receber,1.1.2.01.0001,ATIVO
+201,Fornecedores Diversos,2.1.1.01.0001,PASSIVO
+251,ICMS a Recolher,2.1.2.01.0001,PASSIVO
+252,SIMPLES a Recolher,2.1.2.01.0004,PASSIVO
+301,Receita de Vendas a Vista,3.1.1.01.0001,RECEITA
+401,Compras de Mercadorias,4.1.2.01.0001,DESPESA
+421,Salários e Ordenados,4.2.1.01.0001,DESPESA
