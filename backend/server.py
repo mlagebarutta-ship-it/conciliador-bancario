@@ -718,6 +718,28 @@ async def delete_rule(rule_id: str):
         raise HTTPException(status_code=404, detail="Regra não encontrada")
     return {"message": "Regra excluída com sucesso"}
 
+# Classification History - Memória Inteligente
+@api_router.get("/classification-history")
+async def get_classification_history(company_id: Optional[str] = None):
+    """Retorna o histórico de classificações aprendidas"""
+    query = {"company_id": company_id} if company_id else {}
+    history = await db.classification_history.find(query, {"_id": 0}).sort("usage_count", -1).to_list(1000)
+    return history
+
+@api_router.delete("/classification-history/{history_id}")
+async def delete_classification_history(history_id: str):
+    """Remove um registro do histórico de aprendizado"""
+    result = await db.classification_history.delete_one({"id": history_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Registro não encontrado")
+    return {"message": "Registro removido do histórico de aprendizado"}
+
+@api_router.delete("/classification-history/company/{company_id}")
+async def clear_company_history(company_id: str):
+    """Limpa todo o histórico de aprendizado de uma empresa"""
+    result = await db.classification_history.delete_many({"company_id": company_id})
+    return {"message": f"{result.deleted_count} registros removidos"}
+
 @api_router.put("/classification-rules/{rule_id}", response_model=ClassificationRule)
 async def update_rule(rule_id: str, rule: ClassificationRuleCreate):
     rule_data = rule.model_dump()
