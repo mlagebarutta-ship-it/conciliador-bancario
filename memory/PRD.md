@@ -79,23 +79,6 @@ O sistema detecta automaticamente:
 - `POST /api/chart-of-accounts/{id}/import` - Importa contas em massa
 - `GET/POST/PUT/DELETE /api/classification-rules` - Regras
 
-## Schema do Banco de Dados
-
-```javascript
-// classification_history - Memória de Aprendizado
-{
-  id: String,
-  company_id: String,
-  description_pattern: String,  // Descrição original
-  transaction_type: String,     // C ou D
-  debit_account: String,
-  credit_account: String,
-  usage_count: Number,          // Quantas vezes foi usada
-  last_used: DateTime,
-  created_at: DateTime
-}
-```
-
 ## Próximas Tarefas (Backlog)
 
 ### P1 - Plano de Contas Dinâmico
@@ -104,18 +87,8 @@ Permitir criar novas contas contábeis durante a classificação, sem necessidad
 ### P2 - Validação de Contas
 Validar se as contas de débito/crédito existem no plano antes de permitir o salvamento.
 
-### P2 - Suporte a Arquivos Excel Antigos
-Investigar solução para processar arquivos .xls no formato binário BIFF5.
-
 ### P3 - Refatoração do Backend
 Separar `server.py` em módulos: models, routers, services.
 
-## Dados de Teste
-- **Empresa:** 3GB COMUNICACAO CORPORATIVA LTDA (ID: 5bd7e8c3-1caa-43e1-a4c0-25b5d50ce076)
-- **Plano de Contas:** Plano de contas 3GB (ID: adcdfc85-1083-40c0-8f79-91f935e815f1)
-- **Contas de Teste:** 
-  - 1.1.1.02.000006 (BANCO NUBANK - ATIVO)
-  - 3.1.1.01.000001 (RECEITA)
-
 ## Última Atualização
-**04/03/2026** - Sistema de classificação inteligente com aprendizado implementado e testado (100% dos testes passando)
+**04/03/2026** - Corrigido parser de Excel/CSV/PDF para identificar corretamente débitos e créditos em múltiplos formatos de arquivo
