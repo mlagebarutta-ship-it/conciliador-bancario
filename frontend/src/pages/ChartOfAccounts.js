@@ -321,34 +321,25 @@ export default function ChartOfAccounts() {
             
             <div className="space-y-4">
               <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-lg p-4">
-                <p className="text-sm text-indigo-300 mb-2">📋 Formatos aceitos para importação:</p>
-                
-                <div className="text-xs text-slate-400 space-y-3">
-                  <div>
-                    <p className="text-white font-semibold mb-1">Formato 1 - Simplificado:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li>Colunas: <span className="text-white font-mono">codigo, descricao, tipo</span></li>
-                      <li>Tipos válidos: ATIVO, PASSIVO, RECEITA, DESPESA</li>
-                      <li>Exemplo: 1.1.01, Caixa, ATIVO</li>
-                    </ul>
+                <p className="text-sm text-indigo-300 mb-2">📋 Formato OBRIGATÓRIO do arquivo:</p>
+                <div className="text-xs text-slate-400 space-y-2">
+                  <div className="bg-white/5 p-3 rounded-lg">
+                    <p className="text-white font-semibold mb-2">Colunas na ordem exata:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li><span className="text-white font-mono">Código</span> - Número sequencial (1, 2, 3...)</li>
+                      <li><span className="text-white font-mono">Descrição</span> - Nome da conta (ex: Caixa, Banco Itaú)</li>
+                      <li><span className="text-white font-mono">Classificação</span> - Código contábil (ex: 1.1.1.01.0001)</li>
+                      <li><span className="text-white font-mono">Tipo</span> - ATIVO, PASSIVO, RECEITA ou DESPESA</li>
+                    </ol>
                   </div>
-                  
-                  <div>
-                    <p className="text-white font-semibold mb-1">Formato 2 - Sistema Domínio:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li>Colunas: <span className="text-white font-mono">Código, Descrição, Classificação</span></li>
-                      <li>O tipo é detectado automaticamente pelo código (1=ATIVO, 2=PASSIVO, 3=RECEITA, 4=DESPESA)</li>
-                      <li>Exemplo: 1, Caixa, 1.1.1.01.0001</li>
-                    </ul>
-                  </div>
+                  <p className="text-amber-400 text-xs">⚠️ Todas as colunas são obrigatórias e devem estar nesta ordem!</p>
                 </div>
-                
                 <button
                   onClick={downloadTemplate}
                   className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                 >
                   <Download size={14} />
-                  Baixar template formato simplificado
+                  Baixar template de exemplo
                 </button>
               </div>
               
