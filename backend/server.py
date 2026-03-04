@@ -171,62 +171,188 @@ def clean_cnpj(cnpj: str) -> str:
     return re.sub(r'[^0-9]', '', cnpj)
 
 def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
-    """Parse PDF bank statement"""
+    """Parse PDF bank statement - Suporta múltiplos formatos de extrato"""
     try:
         transactions = []
         
         with pdfplumber.open(io.BytesIO(file_content)) as pdf:
-            full_text = ""
+            # Primeiro, tentar extrair tabelas estruturadas
             for page in pdf.pages:
-                full_text += page.extract_text() + "\n"
+                tables = page.extract_tables()
+                for table in tables:
+                    if not table or len(table) < 2:
+                        continue
+                    
+                    # Detectar colunas pelo cabeçalho
+                    header = [str(h).upper() if h else '' for h in table[0]]
+                    
+                    date_col = None
+                    desc_col = None
+                    value_col = None
+                    debit_col = None
+                    credit_col = None
+                    type_col = None
+                    
+                    for i, h in enumerate(header):
+                        if any(x in h for x in ['DATA', 'DATE', 'DT']):
+                            date_col = i
+                        elif any(x in h for x in ['DESCRIÇÃO', 'DESCRICAO', 'HISTÓRICO', 'HISTORICO', 'LANÇAMENTO', 'LANCAMENTO', 'MEMO']):
+                            desc_col = i
+                        elif any(x in h for x in ['DÉBITO', 'DEBITO', 'SAÍDA', 'SAIDA', 'DÉB', 'DEB']):
+                            debit_col = i
+                        elif any(x in h for x in ['CRÉDITO', 'CREDITO', 'ENTRADA', 'CRÉD', 'CRED']):
+                            credit_col = i
+                        elif any(x in h for x in ['VALOR', 'VALUE', 'QUANTIA', 'MONTANTE']):
+                            value_col = i
+                        elif any(x in h for x in ['TIPO', 'TYPE', 'D/C', 'C/D']):
+                            type_col = i
+                    
+                    # Processar linhas da tabela
+                    for row in table[1:]:
+                        if not row or all(not cell for cell in row):
+                            continue
+                        
+                        # Extrair data
+                        date_val = None
+                        if date_col is not None and date_col < len(row) and row[date_col]:
+                            date_str = str(row[date_col]).strip()
+                            date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', date_str)
+                            if date_match:
+                                date_val = date_match.group(1)
+                                if len(date_val) == 5:
+                                    date_val += "/2026"
+                        
+                        if not date_val:
+                            continue
+                        
+                        # Extrair descrição
+                        description = ""
+                        if desc_col is not None and desc_col < len(row) and row[desc_col]:
+                            description = str(row[desc_col]).strip()
+                        
+                        # Extrair valor - tratar colunas separadas de débito/crédito
+                        amount = 0
+                        trans_type = None
+                        
+                        if debit_col is not None and credit_col is not None:
+                            # Colunas separadas de débito e crédito
+                            debit_val = row[debit_col] if debit_col < len(row) else None
+                            credit_val = row[credit_col] if credit_col < len(row) else None
+                            
+                            if debit_val and str(debit_val).strip():
+                                amount = parse_brazilian_number(str(debit_val))
+                                if amount != 0:
+                                    amount = abs(amount)  # Débito é sempre positivo no registro, mas representa saída
+                                    trans_type = 'D'
+                            
+                            if credit_val and str(credit_val).strip() and trans_type is None:
+                                amount = parse_brazilian_number(str(credit_val))
+                                if amount != 0:
+                                    amount = abs(amount)
+                                    trans_type = 'C'
+                        
+                        elif value_col is not None and value_col < len(row) and row[value_col]:
+                            # Coluna única de valor
+                            amount = parse_brazilian_number(str(row[value_col]))
+                            
+                            # Verificar coluna de tipo se existir
+                            if type_col is not None and type_col < len(row) and row[type_col]:
+                                type_str = str(row[type_col]).upper().strip()
+                                if 'D' in type_str or 'DÉB' in type_str or 'SAÍ' in type_str:
+                                    trans_type = 'D'
+                                    amount = abs(amount)
+                                elif 'C' in type_str or 'CRÉ' in type_str or 'ENT' in type_str:
+                                    trans_type = 'C'
+                                    amount = abs(amount)
+                            
+                            if trans_type is None:
+                                trans_type = 'C' if amount > 0 else 'D'
+                                amount = abs(amount)
+                        
+                        if description and amount != 0 and trans_type:
+                            transactions.append({
+                                'date': date_val,
+                                'description': description,
+                                'amount': amount,
+                                'transaction_type': trans_type
+                            })
             
-            # Padrões comuns em extratos bancários brasileiros
-            # Formato: DD/MM/YYYY ou DD/MM  Descrição  Valor
-            lines = full_text.split('\n')
-            
-            for line in lines:
-                # Tentar encontrar data no formato DD/MM/YYYY ou DD/MM
-                date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', line)
-                if not date_match:
-                    continue
+            # Se não encontrou tabelas, tentar extração por texto
+            if not transactions:
+                full_text = ""
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        full_text += text + "\n"
                 
-                date_str = date_match.group(1)
-                # Se só tem DD/MM, adicionar ano atual
-                if len(date_str) == 5:
-                    date_str += "/2026"
+                lines = full_text.split('\n')
                 
-                # Extrair valor (formato brasileiro: 1.234,56 ou -1.234,56)
-                value_match = re.search(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2})', line)
-                if not value_match:
-                    continue
-                
-                value_str = value_match.group(1).replace('.', '').replace(',', '.').replace(' ', '')
-                try:
-                    amount = float(value_str)
-                except:
-                    continue
-                
-                # Extrair descrição (texto entre data e valor)
-                date_end = date_match.end()
-                value_start = value_match.start()
-                description = line[date_end:value_start].strip()
-                
-                # Limpar descrição
-                description = re.sub(r'\s+', ' ', description)
-                
-                if description and amount != 0:
-                    transactions.append({
-                        'date': date_str,
-                        'description': description,
-                        'amount': amount,
-                        'transaction_type': 'C' if amount > 0 else 'D'
-                    })
+                for line in lines:
+                    # Tentar encontrar data
+                    date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', line)
+                    if not date_match:
+                        continue
+                    
+                    date_str = date_match.group(1)
+                    if len(date_str) == 5:
+                        date_str += "/2026"
+                    
+                    # Buscar múltiplos valores na linha (pode ter débito e crédito)
+                    # Formato brasileiro: 1.234,56 ou -1.234,56 ou (1.234,56)
+                    value_matches = re.findall(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2}|\(\d{1,3}(?:\.\d{3})*,\d{2}\))', line)
+                    
+                    if not value_matches:
+                        continue
+                    
+                    # Pegar o último valor encontrado (geralmente é o valor da transação)
+                    value_str = value_matches[-1]
+                    
+                    # Valor entre parênteses é negativo
+                    is_negative = value_str.startswith('(') or value_str.startswith('-')
+                    value_str = value_str.replace('(', '').replace(')', '').replace('.', '').replace(',', '.').replace(' ', '').replace('-', '').replace('+', '')
+                    
+                    try:
+                        amount = float(value_str)
+                        if is_negative:
+                            amount = -amount
+                    except:
+                        continue
+                    
+                    # Extrair descrição
+                    date_end = date_match.end()
+                    value_start = line.find(value_matches[-1])
+                    description = line[date_end:value_start].strip() if value_start > date_end else ""
+                    description = re.sub(r'\s+', ' ', description)
+                    
+                    # Verificar indicadores de débito/crédito na linha
+                    line_upper = line.upper()
+                    trans_type = None
+                    
+                    if any(x in line_upper for x in ['DÉBITO', 'DEBITO', 'DÉB', 'DEB', 'SAÍDA', 'SAIDA', 'PAGAMENTO', 'TRANSF ENV', 'PIX ENV']):
+                        trans_type = 'D'
+                        amount = abs(amount)
+                    elif any(x in line_upper for x in ['CRÉDITO', 'CREDITO', 'CRÉD', 'CRED', 'ENTRADA', 'RECEBIDO', 'TRANSF REC', 'PIX REC']):
+                        trans_type = 'C'
+                        amount = abs(amount)
+                    else:
+                        trans_type = 'C' if amount > 0 else 'D'
+                        amount = abs(amount)
+                    
+                    if description and amount != 0:
+                        transactions.append({
+                            'date': date_str,
+                            'description': description,
+                            'amount': amount,
+                            'transaction_type': trans_type
+                        })
         
         if not transactions:
             raise HTTPException(status_code=400, detail="Não foi possível extrair transações do PDF. Verifique se o formato é compatível.")
         
         return transactions
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao processar PDF: {str(e)}")
 
