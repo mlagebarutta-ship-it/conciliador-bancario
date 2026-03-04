@@ -396,78 +396,203 @@ def parse_pdf_statement(file_content: bytes) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=400, detail=f"Erro ao processar PDF: {str(e)}")
 
 def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
-    """Parse Excel bank statement"""
+    """Parse Excel/CSV bank statement - Suporta múltiplos formatos"""
     try:
-        df = pd.read_excel(io.BytesIO(file_content))
+        transactions = []
+        df = None
         
-        # Remove linhas vazias e cabeçalhos duplicados
+        # Tentar ler como Excel primeiro, depois CSV
+        try:
+            df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
+        except:
+            try:
+                df = pd.read_excel(io.BytesIO(file_content), engine='xlrd')
+            except:
+                pass
+        
+        if df is None or df.empty:
+            # Tentar como CSV com diferentes encodings
+            for encoding in ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']:
+                try:
+                    df = pd.read_csv(io.BytesIO(file_content), encoding=encoding, sep=None, engine='python')
+                    if not df.empty:
+                        break
+                except:
+                    continue
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=400, detail="Não foi possível ler o arquivo. Verifique o formato.")
+        
+        # Limpar dados
         df = df.dropna(how='all')
         
-        # Detectar colunas de data, descrição e valor
-        transactions = []
+        # Normalizar nomes de colunas
+        df.columns = [str(col).strip().upper() for col in df.columns]
         
+        # Mapear colunas por padrões conhecidos
+        col_mapping = {
+            'date': None,
+            'description': None,
+            'value': None,
+            'debit': None,
+            'credit': None,
+            'type': None
+        }
+        
+        for col in df.columns:
+            col_lower = col.lower()
+            if any(x in col_lower for x in ['data', 'date', 'dt', 'dia']):
+                col_mapping['date'] = col
+            elif any(x in col_lower for x in ['descrição', 'descricao', 'histórico', 'historico', 'memo', 'lançamento', 'lancamento', 'descriç']):
+                col_mapping['description'] = col
+            elif any(x in col_lower for x in ['débito', 'debito', 'déb', 'deb', 'saída', 'saida']):
+                col_mapping['debit'] = col
+            elif any(x in col_lower for x in ['crédito', 'credito', 'créd', 'cred', 'entrada']):
+                col_mapping['credit'] = col
+            elif any(x in col_lower for x in ['valor', 'value', 'quantia', 'montante', 'vlr']):
+                col_mapping['value'] = col
+            elif any(x in col_lower for x in ['tipo', 'type', 'd/c', 'c/d', 'natureza']):
+                col_mapping['type'] = col
+        
+        # Se não encontrou colunas pelos nomes, tentar detectar automaticamente
+        if not col_mapping['date']:
+            for col in df.columns:
+                sample = df[col].dropna().head(5)
+                for val in sample:
+                    if isinstance(val, datetime):
+                        col_mapping['date'] = col
+                        break
+                    if isinstance(val, str) and re.search(r'\d{2}/\d{2}', str(val)):
+                        col_mapping['date'] = col
+                        break
+                if col_mapping['date']:
+                    break
+        
+        if not col_mapping['description']:
+            for col in df.columns:
+                if col == col_mapping['date']:
+                    continue
+                sample = df[col].dropna().head(5)
+                if all(isinstance(v, str) and len(str(v)) > 5 for v in sample):
+                    col_mapping['description'] = col
+                    break
+        
+        # Processar cada linha
         for _, row in df.iterrows():
-            row_dict = row.to_dict()
-            
-            # Tentar encontrar data
+            # Extrair data
             date_val = None
-            for col in row_dict:
-                val = row_dict[col]
-                if pd.notna(val):
-                    try:
-                        if isinstance(val, datetime):
-                            date_val = val.strftime('%d/%m/%Y')
-                            break
-                        elif isinstance(val, str) and '/' in val:
-                            parts = val.split('/')
-                            if len(parts) == 3:
-                                date_val = val
-                                break
-                    except:
-                        pass
+            if col_mapping['date'] and pd.notna(row.get(col_mapping['date'])):
+                raw_date = row[col_mapping['date']]
+                if isinstance(raw_date, datetime):
+                    date_val = raw_date.strftime('%d/%m/%Y')
+                elif isinstance(raw_date, str):
+                    date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', str(raw_date))
+                    if date_match:
+                        date_val = date_match.group(1)
+                        if len(date_val) == 5:
+                            date_val += "/2026"
             
             if not date_val:
                 continue
             
-            # Buscar descrição (normalmente texto longo)
+            # Extrair descrição
             description = ""
-            for col in row_dict:
-                val = row_dict[col]
-                if pd.notna(val) and isinstance(val, str) and len(val) > 10:
-                    if val != date_val:
-                        description = val
-                        break
+            if col_mapping['description'] and pd.notna(row.get(col_mapping['description'])):
+                description = str(row[col_mapping['description']]).strip()
             
-            # Buscar valor (número)
+            if not description:
+                # Tentar encontrar qualquer texto longo na linha
+                for col in df.columns:
+                    val = row.get(col)
+                    if pd.notna(val) and isinstance(val, str) and len(str(val)) > 10:
+                        if val != date_val:
+                            description = str(val).strip()
+                            break
+            
+            # Extrair valor - IMPORTANTE: tratar colunas separadas de débito/crédito
             amount = 0
-            for col in row_dict:
-                val = row_dict[col]
-                if pd.notna(val):
-                    try:
-                        if isinstance(val, (int, float)):
-                            if val != 0:
-                                amount = float(val)
-                                break
-                        elif isinstance(val, str):
-                            val_clean = val.replace('R$', '').replace('.', '').replace(',', '.').strip()
-                            if val_clean.replace('-', '').replace('+', '').replace('.', '').isdigit():
-                                amount = float(val_clean)
-                                break
-                    except:
-                        pass
+            trans_type = None
             
-            if description and amount != 0:
+            # Caso 1: Colunas separadas de débito e crédito
+            if col_mapping['debit'] is not None or col_mapping['credit'] is not None:
+                debit_val = row.get(col_mapping['debit']) if col_mapping['debit'] else None
+                credit_val = row.get(col_mapping['credit']) if col_mapping['credit'] else None
+                
+                # Verificar débito
+                if pd.notna(debit_val):
+                    parsed = parse_brazilian_number(str(debit_val))
+                    if parsed != 0:
+                        amount = abs(parsed)
+                        trans_type = 'D'
+                
+                # Verificar crédito (só se não tiver débito)
+                if trans_type is None and pd.notna(credit_val):
+                    parsed = parse_brazilian_number(str(credit_val))
+                    if parsed != 0:
+                        amount = abs(parsed)
+                        trans_type = 'C'
+            
+            # Caso 2: Coluna única de valor
+            if trans_type is None and col_mapping['value']:
+                val = row.get(col_mapping['value'])
+                if pd.notna(val):
+                    amount = parse_brazilian_number(str(val))
+                    
+                    # Verificar coluna de tipo
+                    if col_mapping['type'] and pd.notna(row.get(col_mapping['type'])):
+                        type_str = str(row[col_mapping['type']]).upper().strip()
+                        if any(x in type_str for x in ['D', 'DÉB', 'DEB', 'SAÍ', 'SAI']):
+                            trans_type = 'D'
+                            amount = abs(amount)
+                        elif any(x in type_str for x in ['C', 'CRÉ', 'CRE', 'ENT']):
+                            trans_type = 'C'
+                            amount = abs(amount)
+                    
+                    if trans_type is None:
+                        trans_type = 'C' if amount > 0 else 'D'
+                        amount = abs(amount)
+            
+            # Caso 3: Tentar encontrar valor em qualquer coluna numérica
+            if trans_type is None:
+                for col in df.columns:
+                    if col in [col_mapping['date'], col_mapping['description']]:
+                        continue
+                    val = row.get(col)
+                    if pd.notna(val):
+                        try:
+                            if isinstance(val, (int, float)) and val != 0:
+                                amount = float(val)
+                                trans_type = 'C' if amount > 0 else 'D'
+                                amount = abs(amount)
+                                break
+                            elif isinstance(val, str):
+                                parsed = parse_brazilian_number(val)
+                                if parsed != 0:
+                                    amount = parsed
+                                    trans_type = 'C' if amount > 0 else 'D'
+                                    amount = abs(amount)
+                                    break
+                        except:
+                            pass
+            
+            # Adicionar transação se tiver dados válidos
+            if description and amount != 0 and trans_type:
                 transactions.append({
                     'date': date_val,
-                    'description': description.strip(),
+                    'description': description,
                     'amount': amount,
-                    'transaction_type': 'C' if amount > 0 else 'D'
+                    'transaction_type': trans_type
                 })
+        
+        if not transactions:
+            raise HTTPException(status_code=400, detail="Não foi possível extrair transações do arquivo. Verifique se o formato está correto.")
         
         return transactions
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao processar Excel: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao processar arquivo: {str(e)}")
 
 def parse_ofx_statement(file_content: bytes) -> List[Dict[str, Any]]:
     """Parse OFX bank statement"""
