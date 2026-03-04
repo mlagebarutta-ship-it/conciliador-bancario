@@ -315,67 +315,120 @@ def parse_ofx_statement(file_content: bytes) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=400, detail=f"Erro ao processar OFX: {str(e)}")
 
 async def classify_transaction(description: str, amount: float, trans_type: str, chart_id: str) -> Dict[str, Optional[str]]:
-    """Classificar transação baseado em regras"""
-    # Buscar regras de classificação
-    rules = await db.classification_rules.find({}, {"_id": 0}).sort("priority", -1).to_list(100)
+    """Classificar transação baseado em regras e plano de contas real da empresa"""
     
-    # Buscar contas do plano
+    # Buscar contas do plano de contas
     accounts = {}
     account_items = await db.account_items.find({"chart_id": chart_id}, {"_id": 0}).to_list(1000)
+    
+    # Criar índices para busca rápida
+    accounts_by_code = {item['code']: item for item in account_items}
+    accounts_by_type = defaultdict(list)
     for item in account_items:
-        accounts[item['code']] = item
+        accounts_by_type[item['account_type']].append(item)
+    
+    # Buscar regras de classificação (ordenadas por prioridade)
+    rules = await db.classification_rules.find({}, {"_id": 0}).sort("priority", -1).to_list(100)
     
     description_upper = description.upper()
-    
-    # Regras padrão
-    default_rules = [
-        {'keyword': 'PIX RECEBIDO', 'debit': 'BANCO', 'credit': 'RECEITA'},
-        {'keyword': 'PIX ENVIADO', 'debit': 'DESPESA', 'credit': 'BANCO'},
-        {'keyword': 'PIX TRANSF', 'debit': 'DESPESA', 'credit': 'BANCO'},
-        {'keyword': 'SISPAG', 'debit': 'PESSOAL', 'credit': 'BANCO'},
-        {'keyword': 'FOLHA', 'debit': 'PESSOAL', 'credit': 'BANCO'},
-        {'keyword': 'SALARIO', 'debit': 'PESSOAL', 'credit': 'BANCO'},
-        {'keyword': 'PRO LABORE', 'debit': 'PROLABORE', 'credit': 'BANCO'},
-        {'keyword': 'TARIFA', 'debit': 'BANCARIAS', 'credit': 'BANCO'},
-        {'keyword': 'IOF', 'debit': 'BANCARIAS', 'credit': 'BANCO'},
-        {'keyword': 'DAS', 'debit': 'IMPOSTOS', 'credit': 'BANCO'},
-        {'keyword': 'GPS', 'debit': 'INSS', 'credit': 'BANCO'},
-        {'keyword': 'DARF', 'debit': 'IMPOSTOS', 'credit': 'BANCO'},
-        {'keyword': 'ENERGIA', 'debit': 'OPERACIONAIS', 'credit': 'BANCO'},
-        {'keyword': 'AGUA', 'debit': 'OPERACIONAIS', 'credit': 'BANCO'},
-        {'keyword': 'TELEFONE', 'debit': 'OPERACIONAIS', 'credit': 'BANCO'},
-        {'keyword': 'ALUGUEL', 'debit': 'ALUGUEL', 'credit': 'BANCO'},
-    ]
     
     # Tentar aplicar regras customizadas
     for rule in rules:
         if rule['keyword'].upper() in description_upper:
-            return {
-                'debit_account': rule.get('debit_account_code'),
-                'credit_account': rule.get('credit_account_code'),
-                'status': 'CLASSIFICADO'
-            }
-    
-    # Tentar aplicar regras padrão
-    for rule in default_rules:
-        if rule['keyword'] in description_upper:
-            # Buscar códigos correspondentes no plano de contas
-            debit_code = None
-            credit_code = None
+            debit_code = rule.get('debit_account_code')
+            credit_code = rule.get('credit_account_code')
             
-            for code, item in accounts.items():
-                desc_upper = item['description'].upper()
-                if rule['debit'] in desc_upper:
-                    debit_code = code
-                if rule['credit'] in desc_upper:
-                    credit_code = code
-            
+            # Validar se os códigos existem no plano
             if debit_code and credit_code:
-                return {
-                    'debit_account': debit_code,
-                    'credit_account': credit_code,
-                    'status': 'CLASSIFICADO'
-                }
+                if debit_code in accounts_by_code and credit_code in accounts_by_code:
+                    return {
+                        'debit_account': debit_code,
+                        'credit_account': credit_code,
+                        'status': 'CLASSIFICADO'
+                    }
+            
+            # Se a regra não tem códigos ou códigos inválidos, tentar buscar contas adequadas
+            # Lógica: Para PIX RECEBIDO, débito é banco e crédito é receita
+            if trans_type == 'C':  # Crédito/Entrada
+                # Buscar conta de banco (ATIVO) para débito
+                banco_conta = None
+                for conta in accounts_by_type['ATIVO']:
+                    if 'BANCO' in conta['description'].upper() or 'CAIXA' in conta['description'].upper():
+                        banco_conta = conta['code']
+                        break
+                
+                # Buscar conta de receita para crédito
+                receita_conta = None
+                for conta in accounts_by_type['RECEITA']:
+                    if 'RECEITA' in conta['description'].upper() or 'VENDA' in conta['description'].upper():
+                        receita_conta = conta['code']
+                        break
+                
+                if banco_conta and receita_conta:
+                    return {
+                        'debit_account': banco_conta,
+                        'credit_account': receita_conta,
+                        'status': 'CLASSIFICADO'
+                    }
+            
+            elif trans_type == 'D':  # Débito/Saída
+                # Buscar conta de despesa específica baseada na palavra-chave
+                despesa_conta = None
+                keyword_lower = rule['keyword'].lower()
+                
+                for conta in accounts_by_type['DESPESA']:
+                    desc_lower = conta['description'].lower()
+                    # Match inteligente baseado na palavra-chave
+                    if 'folha' in keyword_lower or 'sispag' in keyword_lower or 'salario' in keyword_lower:
+                        if 'salario' in desc_lower or 'folha' in desc_lower or 'pessoal' in desc_lower:
+                            despesa_conta = conta['code']
+                            break
+                    elif 'tarifa' in keyword_lower or 'iof' in keyword_lower:
+                        if 'bancaria' in desc_lower or 'tarifa' in desc_lower:
+                            despesa_conta = conta['code']
+                            break
+                    elif 'aluguel' in keyword_lower:
+                        if 'aluguel' in desc_lower:
+                            despesa_conta = conta['code']
+                            break
+                    elif 'energia' in keyword_lower or 'agua' in keyword_lower or 'telefone' in keyword_lower:
+                        if any(x in desc_lower for x in ['energia', 'agua', 'telefone', 'operacion']):
+                            despesa_conta = conta['code']
+                            break
+                
+                # Se não encontrou conta específica, pegar primeira conta de despesa
+                if not despesa_conta and accounts_by_type['DESPESA']:
+                    despesa_conta = accounts_by_type['DESPESA'][0]['code']
+                
+                # Buscar conta de banco para crédito
+                banco_conta = None
+                for conta in accounts_by_type['ATIVO']:
+                    if 'BANCO' in conta['description'].upper() or 'CAIXA' in conta['description'].upper():
+                        banco_conta = conta['code']
+                        break
+                
+                # Para impostos (DAS, GPS, DARF), buscar conta de passivo
+                if any(x in keyword_lower for x in ['das', 'gps', 'darf', 'imposto']):
+                    imposto_conta = None
+                    for conta in accounts_by_type['PASSIVO']:
+                        desc_lower = conta['description'].lower()
+                        if any(x in desc_lower for x in ['imposto', 'simples', 'inss', 'contribui']):
+                            imposto_conta = conta['code']
+                            break
+                    
+                    if imposto_conta and banco_conta:
+                        return {
+                            'debit_account': imposto_conta,
+                            'credit_account': banco_conta,
+                            'status': 'CLASSIFICADO'
+                        }
+                
+                if despesa_conta and banco_conta:
+                    return {
+                        'debit_account': despesa_conta,
+                        'credit_account': banco_conta,
+                        'status': 'CLASSIFICADO'
+                    }
     
     return {
         'debit_account': None,
