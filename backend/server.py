@@ -633,6 +633,21 @@ async def delete_rule(rule_id: str):
         raise HTTPException(status_code=404, detail="Regra não encontrada")
     return {"message": "Regra excluída com sucesso"}
 
+@api_router.put("/classification-rules/{rule_id}", response_model=ClassificationRule)
+async def update_rule(rule_id: str, rule: ClassificationRuleCreate):
+    rule_data = rule.model_dump()
+    result = await db.classification_rules.update_one(
+        {"id": rule_id},
+        {"$set": rule_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Regra não encontrada")
+    
+    updated_rule = await db.classification_rules.find_one({"id": rule_id}, {"_id": 0})
+    if isinstance(updated_rule.get('created_at'), str):
+        updated_rule['created_at'] = datetime.fromisoformat(updated_rule['created_at'])
+    return updated_rule
+
 # Bank Statements - Upload and Process
 @api_router.post("/bank-statements/upload")
 async def upload_statement(
