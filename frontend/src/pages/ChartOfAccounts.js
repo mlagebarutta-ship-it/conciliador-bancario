@@ -146,9 +146,9 @@ export default function ChartOfAccounts() {
   };
   
   const downloadTemplate = () => {
-    // Criar template de exemplo
-    const csvContent = "codigo,descricao,tipo\n1.1.01,Banco Itaú,ATIVO\n4.1.01,Receita de Vendas,RECEITA\n3.1.01,Despesas Operacionais,DESPESA";
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Criar template com formato correto: Código, Descrição, Classificação, Tipo
+    const csvContent = "Código,Descrição,Classificação,Tipo\n1,Caixa,1.1.1.01.0001,ATIVO\n3,Banco Itaú c/ Movimento,1.1.1.02.0001,ATIVO\n21,Duplicatas/Cheques a Receber,1.1.2.01.0001,ATIVO\n201,Fornecedores Diversos,2.1.1.01.0001,PASSIVO\n251,ICMS a Recolher,2.1.2.01.0001,PASSIVO\n301,Receita de Vendas de Mercadorias,3.1.1.01.0001,RECEITA\n401,Aquisição de Mercadorias,4.1.2.01.0001,DESPESA\n421,Salários e Ordenados,4.2.1.01.0001,DESPESA";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
