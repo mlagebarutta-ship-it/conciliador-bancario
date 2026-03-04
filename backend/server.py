@@ -886,7 +886,8 @@ async def upload_statement(
             trans['description'],
             trans['amount'],
             trans['transaction_type'],
-            chart_id
+            chart_id,
+            company_id  # Adicionar company_id
         )
         
         trans_obj = Transaction(
