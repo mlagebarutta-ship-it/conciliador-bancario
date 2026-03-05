@@ -1348,6 +1348,103 @@ async def get_transactions(statement_id: str):
     transactions = await db.transactions.find({"statement_id": statement_id}, {"_id": 0}).to_list(1000)
     return transactions
 
+# Modelo para atualização em massa - DEVE VIR ANTES do endpoint com path parameter
+class BulkUpdateRequest(BaseModel):
+    transaction_ids: List[str]
+    update_data: dict
+
+@api_router.put("/transactions/bulk-update")
+async def bulk_update_transactions(request: BulkUpdateRequest):
+    """Atualiza múltiplas transações de uma vez"""
+    if not request.transaction_ids:
+        raise HTTPException(status_code=400, detail="Nenhuma transação selecionada")
+    
+    if not request.update_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+    
+    # Filtrar campos válidos
+    valid_fields = ['debit_account', 'credit_account', 'status']
+    update_data = {k: v for k, v in request.update_data.items() if k in valid_fields and v}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo válido para atualizar")
+    
+    # Atualizar todas as transações
+    result = await db.transactions.update_many(
+        {"id": {"$in": request.transaction_ids}},
+        {"$set": update_data}
+    )
+    
+    # Se tiver conta de débito e crédito, salvar no histórico de aprendizado
+    if update_data.get('debit_account') and update_data.get('credit_account'):
+        # Buscar as transações atualizadas para salvar no histórico
+        updated_transactions = await db.transactions.find(
+            {"id": {"$in": request.transaction_ids}},
+            {"_id": 0}
+        ).to_list(len(request.transaction_ids))
+        
+        # Agrupar por statement_id para obter company_id
+        statement_ids = set(t['statement_id'] for t in updated_transactions)
+        statements = {}
+        for st_id in statement_ids:
+            st = await db.bank_statements.find_one({"id": st_id}, {"_id": 0})
+            if st:
+                statements[st_id] = st
+        
+        # Salvar histórico para cada descrição única
+        descriptions_saved = set()
+        for trans in updated_transactions:
+            statement = statements.get(trans['statement_id'])
+            if not statement:
+                continue
+            
+            company_id = statement['company_id']
+            description = trans['description']
+            
+            # Evitar duplicatas
+            key = f"{company_id}:{description}"
+            if key in descriptions_saved:
+                continue
+            descriptions_saved.add(key)
+            
+            # Verificar se já existe
+            existing = await db.classification_history.find_one({
+                "company_id": company_id,
+                "description_pattern": description
+            }, {"_id": 0})
+            
+            if existing:
+                await db.classification_history.update_one(
+                    {"id": existing['id']},
+                    {
+                        "$set": {
+                            "debit_account": update_data['debit_account'],
+                            "credit_account": update_data['credit_account'],
+                            "last_used": datetime.now(timezone.utc).isoformat()
+                        },
+                        "$inc": {"usage_count": 1}
+                    }
+                )
+            else:
+                history_entry = ClassificationHistory(
+                    company_id=company_id,
+                    description_pattern=description,
+                    transaction_type=trans.get('transaction_type', 'D'),
+                    debit_account=update_data['debit_account'],
+                    credit_account=update_data['credit_account']
+                )
+                history_doc = history_entry.model_dump()
+                history_doc['created_at'] = history_doc['created_at'].isoformat()
+                history_doc['last_used'] = history_doc['last_used'].isoformat()
+                await db.classification_history.insert_one(history_doc)
+        
+        logger.info(f"Histórico de classificação atualizado para {len(descriptions_saved)} descrições únicas")
+    
+    return {
+        "message": f"{result.modified_count} transações atualizadas com sucesso",
+        "updated_count": result.modified_count
+    }
+
 @api_router.put("/transactions/{transaction_id}", response_model=Transaction)
 async def update_transaction(transaction_id: str, update: TransactionUpdate):
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
