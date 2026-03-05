@@ -46,10 +46,21 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 ### 5. Interface do Usuário
 - Dashboard com visão geral
 - Página de Histórico de Processamentos
-- Página de Detalhes do Processamento (com edição inline)
+- Página de Detalhes do Processamento (com edição inline e **edição em massa**)
 - Página de Empresas
 - Página de Plano de Contas
 - Página de Configurações (Regras de Classificação)
+
+### 6. Edição em Massa de Lançamentos ✅ (Implementado 05/03/2026)
+- **Seleção múltipla:** Checkboxes ao lado de cada lançamento
+- **Seleção rápida:** Botão "Selecionar Todos" no cabeçalho
+- **Indicador visual:** Contador de lançamentos selecionados
+- **Modal de edição:** Permite alterar em lote:
+  - Conta Débito
+  - Conta Crédito
+  - Status (Classificado/Manual)
+- **Aprendizado automático:** As classificações em massa também são salvas no histórico de aprendizado
+- **Edição individual:** Mantida a opção de editar um lançamento específico pelo ícone de lápis
 
 ## Formatos de Arquivo Suportados
 
