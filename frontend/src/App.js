@@ -9,6 +9,7 @@ import NewProcessing from './pages/NewProcessing';
 import History from './pages/History';
 import StatementDetails from './pages/StatementDetails';
 import Settings from './pages/Settings';
+import AccountingProcesses from './pages/AccountingProcesses';
 import './App.css';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/novo-processamento" element={<NewProcessing />} />
             <Route path="/historico" element={<History />} />
             <Route path="/historico/:id" element={<StatementDetails />} />
+            <Route path="/processamentos" element={<AccountingProcesses />} />
             <Route path="/configuracoes" element={<Settings />} />
           </Routes>
         </SidebarLayout>
