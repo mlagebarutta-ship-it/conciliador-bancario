@@ -2037,13 +2037,14 @@ async def import_converted_to_system(
         'chart_id': chart_id,
         'bank_name': bank_name,
         'period': period,
-        'file_name': f'convertido_ofx_{period.replace("/", "_")}.ofx',
+        'filename': f'convertido_ofx_{period.replace("/", "_")}.ofx',
         'total_transactions': len(transactions),
         'classified_count': 0,
         'manual_count': len(transactions),
         'total_inflows': total_inflows,
         'total_outflows': total_outflows,
         'balance': total_inflows - total_outflows,
+        'status': 'COMPLETED',
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     
