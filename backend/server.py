@@ -1550,7 +1550,7 @@ class ConversionPreview(BaseModel):
     transactions: List[ExtractedTransaction]
 
 def extract_transactions_from_excel(file_content: bytes, file_name: str) -> List[Dict]:
-    """Extrai transações de arquivo Excel/CSV"""
+    """Extrai transações de arquivo Excel/CSV - Suporta BIFF5 (Excel 5.0/95)"""
     transactions = []
     df = None
     
@@ -1567,8 +1567,21 @@ def extract_transactions_from_excel(file_content: bytes, file_name: str) -> List
         else:
             try:
                 df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
-            except:
-                df = pd.read_excel(io.BytesIO(file_content), engine='xlrd')
+            except Exception as e1:
+                logger.debug(f"openpyxl falhou: {e1}")
+                try:
+                    df = pd.read_excel(io.BytesIO(file_content), engine='xlrd')
+                except Exception as e2:
+                    logger.debug(f"xlrd falhou: {e2}")
+                    # Tentar converter arquivo legado (BIFF5/Excel 95) usando ssconvert
+                    logger.info("Tentando converter arquivo Excel legado com ssconvert...")
+                    converted_content = convert_legacy_excel_with_ssconvert(file_content)
+                    if converted_content:
+                        try:
+                            df = pd.read_excel(io.BytesIO(converted_content), engine='openpyxl')
+                            logger.info("Arquivo Excel legado convertido com sucesso!")
+                        except Exception as e3:
+                            logger.warning(f"Falha ao ler arquivo convertido: {e3}")
     except Exception as e:
         logger.error(f"Erro ao ler arquivo: {e}")
         return []
