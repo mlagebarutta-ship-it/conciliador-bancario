@@ -62,6 +62,29 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 - **Aprendizado automático:** As classificações em massa também são salvas no histórico de aprendizado
 - **Edição individual:** Mantida a opção de editar um lançamento específico pelo ícone de lápis
 
+### 7. Conversor de Extratos para OFX ✅ (Implementado 06/03/2026)
+Módulo completo para converter arquivos PDF, Excel (XLSX, XLS) e CSV para o formato OFX padronizado:
+
+**Funcionalidades:**
+- Upload de arquivos PDF, XLSX, XLS e CSV
+- Preview das transações extraídas com totais de créditos e débitos
+- Download do arquivo OFX gerado
+- Importação direta para o sistema de conciliação
+
+**Fluxo de Uso:**
+1. Usuário faz upload de um arquivo (CSV, Excel ou PDF)
+2. Sistema extrai as transações e mostra o preview
+3. Usuário pode baixar o OFX ou importar diretamente para o sistema
+4. Na importação, seleciona empresa, plano de contas, banco e período
+5. Sistema cria o extrato e redireciona para a página de detalhes
+
+**API Endpoints:**
+- `POST /api/converter/preview` - Faz preview das transações do arquivo
+- `POST /api/converter/generate-ofx` - Gera e baixa arquivo OFX
+- `POST /api/converter/import-to-system` - Importa direto para conciliação
+
+**Página:** `/conversor-ofx`
+
 ### 8. Sistema de Processamentos Contábeis Organizados ✅ (Implementado 06/03/2026)
 Sistema completo para gerenciamento de processamentos contábeis mensais por empresa:
 
