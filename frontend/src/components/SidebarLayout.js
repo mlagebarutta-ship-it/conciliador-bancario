@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, FileSpreadsheet, Upload, History, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Building2, FileSpreadsheet, Upload, History, Settings, LogOut, Calendar } from 'lucide-react';
 
 export const SidebarLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -10,7 +10,8 @@ export const SidebarLayout = ({ children }) => {
     { path: '/empresas', icon: Building2, label: 'Empresas' },
     { path: '/plano-contas', icon: FileSpreadsheet, label: 'Plano de Contas' },
     { path: '/novo-processamento', icon: Upload, label: 'Novo Processamento' },
-    { path: '/historico', icon: History, label: 'Histórico' },
+    { path: '/processamentos', icon: Calendar, label: 'Processamentos' },
+    { path: '/historico', icon: History, label: 'Histórico Extratos' },
     { path: '/configuracoes', icon: Settings, label: 'Configurações' },
   ];
   
