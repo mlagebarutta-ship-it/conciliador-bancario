@@ -2053,11 +2053,13 @@ async def import_converted_to_system(
     created_transactions = []
     for t in transactions:
         # Tentar classificar usando histórico e regras
+        trans_type = 'C' if t.value > 0 else 'D'
         classification = await classify_transaction(
             t.description,
-            'C' if t.value > 0 else 'D',
-            company_id,
-            chart_id
+            abs(t.value),
+            trans_type,
+            chart_id,
+            company_id
         )
         
         trans = {
