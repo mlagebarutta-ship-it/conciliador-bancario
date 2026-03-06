@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 
 class XLSXValidationTester:
-    def __init__(self, base_url="https://dominio-bridge.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://contador-smart.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
