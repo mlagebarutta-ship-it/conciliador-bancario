@@ -62,26 +62,44 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 - **Aprendizado automático:** As classificações em massa também são salvas no histórico de aprendizado
 - **Edição individual:** Mantida a opção de editar um lançamento específico pelo ícone de lápis
 
-### 7. Dashboard Operacional para Escritórios Contábeis ✅ (Implementado 06/03/2026)
-O dashboard foi completamente reformulado para atender escritórios contábeis que administram múltiplas empresas:
+### 8. Sistema de Processamentos Contábeis Organizados ✅ (Implementado 06/03/2026)
+Sistema completo para gerenciamento de processamentos contábeis mensais por empresa:
 
-**Indicadores de Visão Geral:**
-- Empresas cadastradas
-- Empresas em dia
-- Empresas atrasadas (moderado e crítico)
-- Empresas sem extrato bancário
+**Estrutura Hierárquica:**
+- Organização por: Empresa > Ano > Mês > Processamento
+- Visualização agrupada (árvore expansível) ou em lista (tabela)
+- Escalável para centenas de empresas
 
-**Indicadores de Produção:**
-- Extratos processados
-- Meses contábeis pendentes (soma de todos os atrasos)
-- Lançamentos pendentes de classificação
+**Campos de cada Processamento:**
+- Empresa, Ano, Mês, Período (MM/YYYY)
+- Status: Não iniciado, Em processamento, Aguardando documentos, Concluído, Arquivado
+- Responsável
+- Observações
+- Extratos vinculados
+- Contagem de lançamentos (total, classificados, pendentes)
 
-**Rankings e Prioridades:**
-- Top 10 empresas mais atrasadas
-- Top 10 empresas com mais pendências de classificação
+**Funcionalidades:**
+- Filtros inteligentes: Empresa, Ano, Mês, Status, Responsável, Busca por texto
+- Criação individual ou em massa (período de meses)
+- Edição de status, responsável e observações
+- Arquivamento automático de processamentos antigos (12+ meses)
+- Toggle para visualizar processamentos arquivados
 
-**Tabela de Status Contábil:**
-- Lista completa de empresas com: nome, CNPJ, último mês conciliado, meses em atraso, pendências, status visual (cores), ação para processar
+**Dashboard de Estatísticas:**
+- Empresas com pendências
+- Processamentos atrasados
+- Em andamento
+- Concluídos
+
+**API Endpoints:**
+- `GET /api/accounting-processes` - Lista com filtros
+- `GET /api/accounting-processes/grouped` - Agrupado por empresa/ano
+- `GET /api/accounting-processes/stats` - Estatísticas
+- `POST /api/accounting-processes` - Criar novo
+- `POST /api/accounting-processes/bulk-create` - Criar em massa
+- `PUT /api/accounting-processes/{id}` - Atualizar
+- `POST /api/accounting-processes/{id}/archive` - Arquivar
+- `POST /api/accounting-processes/archive-old` - Arquivar antigos automaticamente
 
 ## Formatos de Arquivo Suportados
 
