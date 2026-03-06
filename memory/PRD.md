@@ -169,4 +169,4 @@ Validar se as contas de débito/crédito existem no plano antes de permitir o sa
 Separar `server.py` em módulos: models, routers, services.
 
 ## Última Atualização
-**04/03/2026** - Corrigido parser de Excel/CSV/PDF para identificar corretamente débitos e créditos em múltiplos formatos de arquivo
+**06/03/2026** - Implementado módulo completo "Conversor de Extratos para OFX" com suporte a PDF, Excel e CSV. O conversor permite preview das transações, download de OFX e importação direta para o sistema de conciliação.
