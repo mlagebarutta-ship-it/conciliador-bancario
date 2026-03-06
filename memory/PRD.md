@@ -11,7 +11,7 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 
 ## Funcionalidades Implementadas ✅
 
-### 1. Processamento de Extratos (Atualizado 04/03/2026)
+### 1. Processamento de Extratos (Atualizado 06/03/2026)
 - Upload de arquivos OFX, Excel (xlsx, xls), CSV e PDF
 - **Parser inteligente que identifica corretamente:**
   - Valores positivos (créditos/entradas) e negativos (débitos/saídas)
@@ -19,13 +19,15 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
   - Coluna única de Valor com detecção de sinal
   - Coluna de Tipo (D/C) quando presente
   - Formato de número brasileiro (1.234,56) e americano (1,234.56)
-  - **NOVO: Valores com sinal negativo no final (ex: 415,84-) - Formato Santander**
+  - Valores com sinal negativo no final (ex: 415,84-) - Formato Santander
 - **Parser especializado para formato Santander:**
   - Detecta automaticamente extratos do Santander
   - Processa colunas Unnamed corretamente
   - Identifica créditos (valores float) e débitos (valores com "-" no final)
 - Extração de tabelas estruturadas em PDFs
 - Suporte a CSV com diferentes encodings (UTF-8, Latin-1, ISO-8859-1)
+- **NOVO: Suporte a arquivos Excel antigos (BIFF5/Excel 5.0/95)**
+  - Usa ssconvert (Gnumeric) para converter formatos legados automaticamente
 
 ### 2. Sistema de Classificação Inteligente com Aprendizado ✅ (Implementado 04/03/2026)
 - **Memória de Classificações:** Quando o usuário classifica manualmente uma transação, o sistema salva no histórico (`classification_history`)
