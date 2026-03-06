@@ -1142,6 +1142,344 @@ async def get_dashboard_stats():
         "all_companies_status": company_list
     }
 
+# ============= ACCOUNTING PROCESSES =============
+
+@api_router.get("/accounting-processes")
+async def get_accounting_processes(
+    company_id: Optional[str] = None,
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    status: Optional[str] = None,
+    responsible: Optional[str] = None,
+    is_archived: Optional[bool] = False
+):
+    """Lista processamentos contábeis com filtros"""
+    query = {}
+    
+    if company_id:
+        query["company_id"] = company_id
+    if year:
+        query["year"] = year
+    if month:
+        query["month"] = month
+    if status:
+        query["status"] = status
+    if responsible:
+        query["responsible"] = {"$regex": responsible, "$options": "i"}
+    if is_archived is not None:
+        query["is_archived"] = is_archived
+    
+    processes = await db.accounting_processes.find(query, {"_id": 0}).sort([
+        ("year", -1),
+        ("month", -1),
+        ("company_name", 1)
+    ]).to_list(1000)
+    
+    # Converter datas
+    for p in processes:
+        for date_field in ['created_at', 'updated_at', 'completed_at']:
+            if isinstance(p.get(date_field), str):
+                try:
+                    p[date_field] = datetime.fromisoformat(p[date_field])
+                except:
+                    pass
+    
+    return processes
+
+@api_router.get("/accounting-processes/grouped")
+async def get_accounting_processes_grouped(
+    company_id: Optional[str] = None,
+    is_archived: bool = False
+):
+    """Retorna processamentos agrupados por empresa > ano > mês"""
+    query = {"is_archived": is_archived}
+    if company_id:
+        query["company_id"] = company_id
+    
+    processes = await db.accounting_processes.find(query, {"_id": 0}).sort([
+        ("company_name", 1),
+        ("year", -1),
+        ("month", -1)
+    ]).to_list(10000)
+    
+    # Agrupar por empresa > ano > mês
+    grouped = {}
+    for p in processes:
+        company_name = p['company_name']
+        year = p['year']
+        month = p['month']
+        
+        if company_name not in grouped:
+            grouped[company_name] = {
+                'company_id': p['company_id'],
+                'company_name': company_name,
+                'years': {}
+            }
+        
+        if year not in grouped[company_name]['years']:
+            grouped[company_name]['years'][year] = {'months': {}}
+        
+        grouped[company_name]['years'][year]['months'][month] = p
+    
+    return grouped
+
+@api_router.get("/accounting-processes/stats")
+async def get_accounting_processes_stats():
+    """Retorna estatísticas dos processamentos"""
+    all_processes = await db.accounting_processes.find({"is_archived": False}, {"_id": 0}).to_list(10000)
+    
+    stats = {
+        'total': len(all_processes),
+        'by_status': {},
+        'companies_with_pending': set(),
+        'overdue_count': 0,
+        'in_progress_count': 0,
+        'completed_count': 0
+    }
+    
+    now = datetime.now(timezone.utc)
+    current_year = now.year
+    current_month = now.month
+    
+    for p in all_processes:
+        # Contar por status
+        status = p.get('status', 'NAO_INICIADO')
+        stats['by_status'][status] = stats['by_status'].get(status, 0) + 1
+        
+        # Verificar se está atrasado (mês anterior ao atual e não concluído)
+        p_year = p.get('year', 0)
+        p_month = p.get('month', 0)
+        is_past = (p_year < current_year) or (p_year == current_year and p_month < current_month)
+        
+        if status != 'CONCLUIDO' and is_past:
+            stats['overdue_count'] += 1
+            stats['companies_with_pending'].add(p.get('company_name', ''))
+        
+        if status == 'EM_PROCESSAMENTO':
+            stats['in_progress_count'] += 1
+        elif status == 'CONCLUIDO':
+            stats['completed_count'] += 1
+    
+    stats['companies_with_pending'] = len(stats['companies_with_pending'])
+    
+    return stats
+
+@api_router.post("/accounting-processes")
+async def create_accounting_process(process: AccountingProcessCreate):
+    """Cria um novo processamento contábil"""
+    # Buscar nome da empresa
+    company = await db.companies.find_one({"id": process.company_id}, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    # Verificar se já existe processamento para este período
+    existing = await db.accounting_processes.find_one({
+        "company_id": process.company_id,
+        "year": process.year,
+        "month": process.month,
+        "is_archived": False
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Já existe um processamento para este período")
+    
+    process_obj = AccountingProcess(
+        company_id=process.company_id,
+        company_name=company['name'],
+        year=process.year,
+        month=process.month,
+        period=f"{process.month:02d}/{process.year}",
+        responsible=process.responsible,
+        observations=process.observations
+    )
+    
+    doc = process_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    if doc['completed_at']:
+        doc['completed_at'] = doc['completed_at'].isoformat()
+    
+    await db.accounting_processes.insert_one(doc)
+    return process_obj
+
+@api_router.post("/accounting-processes/bulk-create")
+async def bulk_create_accounting_processes(
+    company_id: str,
+    start_year: int,
+    start_month: int,
+    end_year: int,
+    end_month: int,
+    responsible: Optional[str] = None
+):
+    """Cria múltiplos processamentos de uma vez (para preencher meses pendentes)"""
+    company = await db.companies.find_one({"id": company_id}, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    created = []
+    current = datetime(start_year, start_month, 1)
+    end = datetime(end_year, end_month, 1)
+    
+    while current <= end:
+        # Verificar se já existe
+        existing = await db.accounting_processes.find_one({
+            "company_id": company_id,
+            "year": current.year,
+            "month": current.month,
+            "is_archived": False
+        })
+        
+        if not existing:
+            process_obj = AccountingProcess(
+                company_id=company_id,
+                company_name=company['name'],
+                year=current.year,
+                month=current.month,
+                period=f"{current.month:02d}/{current.year}",
+                responsible=responsible
+            )
+            
+            doc = process_obj.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            if doc['completed_at']:
+                doc['completed_at'] = doc['completed_at'].isoformat()
+            
+            await db.accounting_processes.insert_one(doc)
+            created.append({"year": current.year, "month": current.month})
+        
+        # Próximo mês
+        if current.month == 12:
+            current = datetime(current.year + 1, 1, 1)
+        else:
+            current = datetime(current.year, current.month + 1, 1)
+    
+    return {"created": created, "count": len(created)}
+
+@api_router.get("/accounting-processes/{process_id}")
+async def get_accounting_process(process_id: str):
+    """Retorna detalhes de um processamento"""
+    process = await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+    if not process:
+        raise HTTPException(status_code=404, detail="Processamento não encontrado")
+    return process
+
+@api_router.put("/accounting-processes/{process_id}")
+async def update_accounting_process(process_id: str, update: AccountingProcessUpdate):
+    """Atualiza um processamento"""
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Se status mudou para CONCLUIDO, registrar data de conclusão
+    if update_data.get('status') == 'CONCLUIDO':
+        update_data['completed_at'] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.accounting_processes.update_one(
+        {"id": process_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Processamento não encontrado")
+    
+    return await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+
+@api_router.delete("/accounting-processes/{process_id}")
+async def delete_accounting_process(process_id: str):
+    """Exclui um processamento"""
+    result = await db.accounting_processes.delete_one({"id": process_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Processamento não encontrado")
+    return {"message": "Processamento excluído"}
+
+@api_router.post("/accounting-processes/{process_id}/archive")
+async def archive_accounting_process(process_id: str):
+    """Arquiva um processamento"""
+    result = await db.accounting_processes.update_one(
+        {"id": process_id},
+        {"$set": {"is_archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Processamento não encontrado")
+    return {"message": "Processamento arquivado"}
+
+@api_router.post("/accounting-processes/archive-old")
+async def archive_old_processes(months_old: int = 12):
+    """Arquiva automaticamente processamentos concluídos há mais de X meses"""
+    cutoff_date = datetime.now(timezone.utc)
+    cutoff_year = cutoff_date.year
+    cutoff_month = cutoff_date.month - months_old
+    
+    while cutoff_month <= 0:
+        cutoff_year -= 1
+        cutoff_month += 12
+    
+    # Buscar processamentos concluídos antigos
+    query = {
+        "status": "CONCLUIDO",
+        "is_archived": False,
+        "$or": [
+            {"year": {"$lt": cutoff_year}},
+            {"$and": [{"year": cutoff_year}, {"month": {"$lt": cutoff_month}}]}
+        ]
+    }
+    
+    result = await db.accounting_processes.update_many(
+        query,
+        {"$set": {"is_archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"archived_count": result.modified_count}
+
+@api_router.post("/accounting-processes/{process_id}/link-statement")
+async def link_statement_to_process(process_id: str, statement_id: str):
+    """Vincula um extrato bancário a um processamento"""
+    # Verificar se o processamento existe
+    process = await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+    if not process:
+        raise HTTPException(status_code=404, detail="Processamento não encontrado")
+    
+    # Verificar se o extrato existe
+    statement = await db.bank_statements.find_one({"id": statement_id}, {"_id": 0})
+    if not statement:
+        raise HTTPException(status_code=404, detail="Extrato não encontrado")
+    
+    # Adicionar extrato ao processamento
+    statement_ids = process.get('statement_ids', [])
+    if statement_id not in statement_ids:
+        statement_ids.append(statement_id)
+    
+    # Recalcular estatísticas
+    total_trans = 0
+    classified_trans = 0
+    for sid in statement_ids:
+        trans = await db.transactions.find({"statement_id": sid}, {"_id": 0}).to_list(10000)
+        total_trans += len(trans)
+        classified_trans += len([t for t in trans if t.get('status') == 'CLASSIFICADO'])
+    
+    await db.accounting_processes.update_one(
+        {"id": process_id},
+        {"$set": {
+            "statement_ids": statement_ids,
+            "total_transactions": total_trans,
+            "classified_transactions": classified_trans,
+            "pending_transactions": total_trans - classified_trans,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Extrato vinculado ao processamento"}
+
+@api_router.get("/accounting-processes/responsibles/list")
+async def get_responsibles():
+    """Lista todos os responsáveis únicos"""
+    processes = await db.accounting_processes.find(
+        {"responsible": {"$ne": None, "$ne": ""}},
+        {"responsible": 1, "_id": 0}
+    ).to_list(10000)
+    
+    responsibles = list(set(p['responsible'] for p in processes if p.get('responsible')))
+    return sorted(responsibles)
+
 # Companies
 @api_router.post("/companies", response_model=Company)
 async def create_company(company: CompanyCreate):
