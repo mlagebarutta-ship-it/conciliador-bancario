@@ -951,6 +951,155 @@ async def classify_transaction(description: str, amount: float, trans_type: str,
 async def root():
     return {"message": "API Agente Contábil - Sistema Domínio"}
 
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats():
+    """Retorna estatísticas operacionais do escritório contábil"""
+    
+    # Mês atual para comparação
+    now = datetime.now(timezone.utc)
+    current_month = f"{now.month:02d}/{now.year}"
+    current_year_month = f"{now.year}{now.month:02d}"
+    
+    # Buscar todas as empresas
+    companies = await db.companies.find({}, {"_id": 0}).to_list(1000)
+    total_companies = len(companies)
+    
+    # Buscar todos os extratos
+    statements = await db.bank_statements.find({}, {"_id": 0}).to_list(10000)
+    
+    # Buscar todas as transações pendentes de classificação
+    pending_transactions = await db.transactions.count_documents({"status": "CLASSIFICAR MANUALMENTE"})
+    total_transactions = await db.transactions.count_documents({})
+    classified_transactions = total_transactions - pending_transactions
+    
+    # Agrupar extratos por empresa e encontrar o último mês processado
+    company_status = {}
+    for company in companies:
+        company_id = company['id']
+        company_statements = [s for s in statements if s.get('company_id') == company_id]
+        
+        if not company_statements:
+            company_status[company_id] = {
+                'company_name': company['name'],
+                'cnpj': company.get('cnpj', ''),
+                'last_period': None,
+                'last_period_date': None,
+                'months_behind': 999,  # Nunca teve extrato
+                'status': 'SEM_EXTRATO',
+                'pending_transactions': 0
+            }
+        else:
+            # Encontrar o período mais recente
+            def parse_period(period_str):
+                """Converte MM/YYYY para YYYYMM para ordenação"""
+                try:
+                    parts = period_str.split('/')
+                    if len(parts) == 2:
+                        month, year = parts
+                        return f"{year}{month.zfill(2)}"
+                except:
+                    pass
+                return "000000"
+            
+            sorted_statements = sorted(company_statements, key=lambda s: parse_period(s.get('period', '')), reverse=True)
+            last_statement = sorted_statements[0]
+            last_period = last_statement.get('period', '')
+            last_period_key = parse_period(last_period)
+            
+            # Calcular meses de atraso
+            try:
+                if len(last_period_key) == 6:
+                    last_year = int(last_period_key[:4])
+                    last_month = int(last_period_key[4:])
+                    current_year = now.year
+                    current_month_num = now.month
+                    months_behind = (current_year - last_year) * 12 + (current_month_num - last_month)
+                else:
+                    months_behind = 999
+            except:
+                months_behind = 999
+            
+            # Contar transações pendentes desta empresa
+            company_pending = 0
+            for s in company_statements:
+                trans_pending = await db.transactions.count_documents({
+                    "statement_id": s['id'],
+                    "status": "CLASSIFICAR MANUALMENTE"
+                })
+                company_pending += trans_pending
+            
+            # Determinar status
+            if months_behind <= 0:
+                status = 'EM_DIA'
+            elif months_behind <= 2:
+                status = 'ATRASADA'
+            else:
+                status = 'MUITO_ATRASADA'
+            
+            company_status[company_id] = {
+                'company_name': company['name'],
+                'cnpj': company.get('cnpj', ''),
+                'last_period': last_period,
+                'last_period_date': last_period_key,
+                'months_behind': months_behind,
+                'status': status,
+                'pending_transactions': company_pending
+            }
+    
+    # Calcular indicadores
+    companies_up_to_date = len([c for c in company_status.values() if c['status'] == 'EM_DIA'])
+    companies_behind = len([c for c in company_status.values() if c['status'] == 'ATRASADA'])
+    companies_very_behind = len([c for c in company_status.values() if c['status'] == 'MUITO_ATRASADA'])
+    companies_no_statement = len([c for c in company_status.values() if c['status'] == 'SEM_EXTRATO'])
+    
+    # Calcular meses contábeis pendentes (soma de meses em atraso de todas as empresas)
+    total_months_pending = sum(c['months_behind'] for c in company_status.values() if c['months_behind'] < 999)
+    
+    # Ranking de empresas mais atrasadas
+    most_behind = sorted(
+        [c for c in company_status.values() if c['months_behind'] > 0 and c['months_behind'] < 999],
+        key=lambda x: x['months_behind'],
+        reverse=True
+    )[:10]
+    
+    # Empresas com mais pendências de classificação
+    most_pending = sorted(
+        [c for c in company_status.values() if c['pending_transactions'] > 0],
+        key=lambda x: x['pending_transactions'],
+        reverse=True
+    )[:10]
+    
+    # Empresas sem extrato do mês atual
+    companies_without_current = [
+        c for c in company_status.values()
+        if c['months_behind'] > 0 or c['status'] == 'SEM_EXTRATO'
+    ]
+    
+    # Lista completa de empresas com status
+    company_list = sorted(
+        list(company_status.values()),
+        key=lambda x: (x['months_behind'] if x['months_behind'] < 999 else 9999, x['company_name'])
+    )
+    
+    return {
+        "summary": {
+            "total_companies": total_companies,
+            "companies_up_to_date": companies_up_to_date,
+            "companies_behind": companies_behind,
+            "companies_very_behind": companies_very_behind,
+            "companies_no_statement": companies_no_statement,
+            "total_statements": len(statements),
+            "total_transactions": total_transactions,
+            "classified_transactions": classified_transactions,
+            "pending_transactions": pending_transactions,
+            "total_months_pending": total_months_pending
+        },
+        "most_behind_companies": most_behind,
+        "most_pending_companies": most_pending,
+        "companies_without_current_month": companies_without_current[:10],
+        "all_companies_status": company_list
+    }
+
 # Companies
 @api_router.post("/companies", response_model=Company)
 async def create_company(company: CompanyCreate):
