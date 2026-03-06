@@ -10,6 +10,7 @@ import History from './pages/History';
 import StatementDetails from './pages/StatementDetails';
 import Settings from './pages/Settings';
 import AccountingProcesses from './pages/AccountingProcesses';
+import OFXConverter from './pages/OFXConverter';
 import './App.css';
 
 function App() {
