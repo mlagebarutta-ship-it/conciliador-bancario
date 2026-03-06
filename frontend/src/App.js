@@ -33,6 +33,7 @@ function App() {
             <Route path="/empresas" element={<Companies />} />
             <Route path="/plano-contas" element={<ChartOfAccounts />} />
             <Route path="/novo-processamento" element={<NewProcessing />} />
+            <Route path="/conversor-ofx" element={<OFXConverter />} />
             <Route path="/historico" element={<History />} />
             <Route path="/historico/:id" element={<StatementDetails />} />
             <Route path="/processamentos" element={<AccountingProcesses />} />
