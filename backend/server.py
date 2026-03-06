@@ -611,8 +611,47 @@ def parse_santander_format(df: pd.DataFrame) -> List[Dict[str, Any]]:
     
     return transactions
 
+def convert_legacy_excel_with_ssconvert(file_content: bytes) -> bytes:
+    """Converte arquivos Excel antigos (BIFF5/Excel 95) para XLSX usando ssconvert"""
+    import subprocess
+    import tempfile
+    
+    # Criar arquivos temporários
+    with tempfile.NamedTemporaryFile(suffix='.xls', delete=False) as input_file:
+        input_file.write(file_content)
+        input_path = input_file.name
+    
+    output_path = input_path.replace('.xls', '_converted.xlsx')
+    
+    try:
+        # Usar ssconvert para converter
+        result = subprocess.run(
+            ['ssconvert', input_path, output_path],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0 and os.path.exists(output_path):
+            with open(output_path, 'rb') as f:
+                return f.read()
+        else:
+            logger.warning(f"ssconvert falhou: {result.stderr}")
+            return None
+    except Exception as e:
+        logger.warning(f"Erro ao usar ssconvert: {e}")
+        return None
+    finally:
+        # Limpar arquivos temporários
+        try:
+            os.unlink(input_path)
+            if os.path.exists(output_path):
+                os.unlink(output_path)
+        except:
+            pass
+
 def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
-    """Parse Excel/CSV bank statement - Suporta múltiplos formatos"""
+    """Parse Excel/CSV bank statement - Suporta múltiplos formatos incluindo BIFF5 (Excel 5.0/95)"""
     try:
         transactions = []
         df = None
@@ -620,11 +659,21 @@ def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
         # Tentar ler como Excel primeiro, depois CSV
         try:
             df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
-        except:
+        except Exception as e1:
+            logger.debug(f"openpyxl falhou: {e1}")
             try:
                 df = pd.read_excel(io.BytesIO(file_content), engine='xlrd')
-            except:
-                pass
+            except Exception as e2:
+                logger.debug(f"xlrd falhou: {e2}")
+                # Tentar converter arquivo legado (BIFF5/Excel 95) usando ssconvert
+                logger.info("Tentando converter arquivo Excel legado com ssconvert...")
+                converted_content = convert_legacy_excel_with_ssconvert(file_content)
+                if converted_content:
+                    try:
+                        df = pd.read_excel(io.BytesIO(converted_content), engine='openpyxl')
+                        logger.info("Arquivo Excel legado convertido com sucesso!")
+                    except Exception as e3:
+                        logger.warning(f"Falha ao ler arquivo convertido: {e3}")
         
         if df is None or df.empty:
             # Tentar como CSV com diferentes encodings
@@ -637,7 +686,7 @@ def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
                     continue
         
         if df is None or df.empty:
-            raise HTTPException(status_code=400, detail="Não foi possível ler o arquivo. Verifique o formato.")
+            raise HTTPException(status_code=400, detail="Não foi possível ler o arquivo. Verifique o formato. Para arquivos Excel muito antigos (Excel 5.0/95), tente salvar em formato mais recente.")
         
         # Limpar dados
         df = df.dropna(how='all')
