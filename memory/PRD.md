@@ -171,4 +171,4 @@ Validar se as contas de débito/crédito existem no plano antes de permitir o sa
 Separar `server.py` em módulos: models, routers, services.
 
 ## Última Atualização
-**06/03/2026** - Implementado módulo completo "Conversor de Extratos para OFX" com suporte a PDF, Excel e CSV. O conversor permite preview das transações, download de OFX e importação direta para o sistema de conciliação.
+**06/03/2026** - Adicionado suporte a arquivos Excel antigos (BIFF5/Excel 5.0/95) usando ssconvert do Gnumeric para conversão automática. Implementado módulo completo "Conversor de Extratos para OFX" com suporte a PDF, Excel e CSV.
