@@ -44,7 +44,7 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
 - Formatação profissional com cabeçalhos coloridos
 
 ### 5. Interface do Usuário
-- Dashboard com visão geral
+- **Dashboard Operacional** (Reformulado 06/03/2026) - Painel de controle para escritórios contábeis
 - Página de Histórico de Processamentos
 - Página de Detalhes do Processamento (com edição inline e **edição em massa**)
 - Página de Empresas
@@ -61,6 +61,27 @@ Sistema web para contadores brasileiros que usam o software "Domínio" (Thomson 
   - Status (Classificado/Manual)
 - **Aprendizado automático:** As classificações em massa também são salvas no histórico de aprendizado
 - **Edição individual:** Mantida a opção de editar um lançamento específico pelo ícone de lápis
+
+### 7. Dashboard Operacional para Escritórios Contábeis ✅ (Implementado 06/03/2026)
+O dashboard foi completamente reformulado para atender escritórios contábeis que administram múltiplas empresas:
+
+**Indicadores de Visão Geral:**
+- Empresas cadastradas
+- Empresas em dia
+- Empresas atrasadas (moderado e crítico)
+- Empresas sem extrato bancário
+
+**Indicadores de Produção:**
+- Extratos processados
+- Meses contábeis pendentes (soma de todos os atrasos)
+- Lançamentos pendentes de classificação
+
+**Rankings e Prioridades:**
+- Top 10 empresas mais atrasadas
+- Top 10 empresas com mais pendências de classificação
+
+**Tabela de Status Contábil:**
+- Lista completa de empresas com: nome, CNPJ, último mês conciliado, meses em atraso, pendências, status visual (cores), ação para processar
 
 ## Formatos de Arquivo Suportados
 
