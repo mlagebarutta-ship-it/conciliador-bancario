@@ -1480,6 +1480,619 @@ async def get_responsibles():
     responsibles = list(set(p['responsible'] for p in processes if p.get('responsible')))
     return sorted(responsibles)
 
+# ============= CONVERSOR OFX =============
+
+class ExtractedTransaction(BaseModel):
+    """Transação extraída de arquivo"""
+    date: str
+    description: str
+    value: float
+    type: str  # 'DEBIT' ou 'CREDIT'
+    fit_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:12])
+
+class ConversionPreview(BaseModel):
+    """Preview da conversão"""
+    file_name: str
+    file_type: str
+    total_transactions: int
+    total_credits: float
+    total_debits: float
+    balance: float
+    transactions: List[ExtractedTransaction]
+
+def extract_transactions_from_excel(file_content: bytes, file_name: str) -> List[Dict]:
+    """Extrai transações de arquivo Excel/CSV"""
+    transactions = []
+    df = None
+    
+    # Tentar ler como Excel primeiro
+    try:
+        if file_name.lower().endswith('.csv'):
+            for encoding in ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']:
+                try:
+                    df = pd.read_csv(io.BytesIO(file_content), encoding=encoding, sep=None, engine='python')
+                    if not df.empty:
+                        break
+                except:
+                    continue
+        else:
+            try:
+                df = pd.read_excel(io.BytesIO(file_content), engine='openpyxl')
+            except:
+                df = pd.read_excel(io.BytesIO(file_content), engine='xlrd')
+    except Exception as e:
+        logger.error(f"Erro ao ler arquivo: {e}")
+        return []
+    
+    if df is None or df.empty:
+        return []
+    
+    # Remover linhas totalmente vazias
+    df = df.dropna(how='all')
+    
+    # Detectar colunas por conteúdo
+    col_indices = {
+        'date': None,
+        'description': None,
+        'value': None,
+        'debit': None,
+        'credit': None
+    }
+    
+    # Normalizar nomes de colunas
+    col_names = [str(col).strip().upper() for col in df.columns]
+    
+    for i, col_name in enumerate(col_names):
+        col_lower = col_name.lower()
+        if any(x in col_lower for x in ['data', 'date', 'dt', 'dia']):
+            col_indices['date'] = i
+        elif any(x in col_lower for x in ['descrição', 'descricao', 'histórico', 'historico', 'memo', 'lançamento', 'lancamento']):
+            col_indices['description'] = i
+        elif any(x in col_lower for x in ['débito', 'debito', 'déb', 'deb', 'saída', 'saida']):
+            col_indices['debit'] = i
+        elif any(x in col_lower for x in ['crédito', 'credito', 'créd', 'cred', 'entrada']):
+            col_indices['credit'] = i
+        elif any(x in col_lower for x in ['valor', 'value', 'quantia', 'montante', 'vlr']):
+            col_indices['value'] = i
+    
+    # Se não encontrou colunas pelos nomes, detectar automaticamente
+    if col_indices['date'] is None:
+        for i in range(len(df.columns)):
+            sample = df.iloc[:20, i].dropna()
+            date_count = 0
+            for val in sample:
+                if isinstance(val, datetime):
+                    date_count += 1
+                elif isinstance(val, str) and re.search(r'\d{2}/\d{2}', str(val)):
+                    date_count += 1
+            if date_count >= 3:
+                col_indices['date'] = i
+                break
+    
+    # Detectar coluna de débito por valores com "-" no final (formato Santander)
+    if col_indices['debit'] is None:
+        for i in range(len(df.columns)):
+            sample = df.iloc[:50, i].dropna()
+            neg_count = sum(1 for val in sample if str(val).strip().endswith('-'))
+            if neg_count >= 3:
+                col_indices['debit'] = i
+                break
+    
+    # Processar linhas
+    for idx, row in df.iterrows():
+        try:
+            # Extrair data
+            date_val = None
+            if col_indices['date'] is not None:
+                raw_date = row.iloc[col_indices['date']]
+                if pd.notna(raw_date):
+                    if isinstance(raw_date, datetime):
+                        date_val = raw_date.strftime('%d/%m/%Y')
+                    elif isinstance(raw_date, str):
+                        match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', str(raw_date))
+                        if match:
+                            date_val = match.group(1)
+                            if len(date_val) == 5:
+                                date_val += "/2025"
+            
+            if not date_val:
+                continue
+            
+            # Extrair descrição
+            description = ""
+            if col_indices['description'] is not None and pd.notna(row.iloc[col_indices['description']]):
+                description = str(row.iloc[col_indices['description']]).strip()
+            
+            if not description:
+                # Tentar encontrar texto em outras colunas
+                for i in range(len(row)):
+                    if i != col_indices['date'] and i != col_indices['value'] and i != col_indices['debit'] and i != col_indices['credit']:
+                        val = row.iloc[i]
+                        if pd.notna(val) and isinstance(val, str) and len(val) > 5:
+                            description = val.strip()
+                            break
+            
+            if not description:
+                continue
+            
+            # Ignorar linhas de cabeçalho/resumo
+            desc_lower = description.lower()
+            if any(x in desc_lower for x in ['saldo', 'total', 'anterior', 'entradas', 'saídas']):
+                continue
+            
+            # Extrair valor
+            value = 0
+            
+            # Caso 1: Colunas separadas de débito e crédito
+            if col_indices['debit'] is not None or col_indices['credit'] is not None:
+                debit_val = 0
+                credit_val = 0
+                
+                if col_indices['debit'] is not None and pd.notna(row.iloc[col_indices['debit']]):
+                    debit_str = str(row.iloc[col_indices['debit']]).strip()
+                    if debit_str and not any(x in debit_str.lower() for x in ['saída', 'débito', 'r$']):
+                        debit_val = abs(parse_brazilian_number(debit_str))
+                
+                if col_indices['credit'] is not None and pd.notna(row.iloc[col_indices['credit']]):
+                    credit_raw = row.iloc[col_indices['credit']]
+                    if isinstance(credit_raw, (int, float)) and credit_raw > 0:
+                        credit_val = float(credit_raw)
+                    elif isinstance(credit_raw, str):
+                        credit_str = str(credit_raw).strip()
+                        if credit_str and not any(x in credit_str.lower() for x in ['entrada', 'crédito', 'r$']):
+                            credit_val = abs(parse_brazilian_number(credit_str))
+                
+                # valor = credito - debito
+                if credit_val > 0:
+                    value = credit_val
+                elif debit_val > 0:
+                    value = -debit_val
+            
+            # Caso 2: Coluna única de valor
+            elif col_indices['value'] is not None and pd.notna(row.iloc[col_indices['value']]):
+                value = parse_brazilian_number(str(row.iloc[col_indices['value']]))
+            
+            if value == 0:
+                continue
+            
+            transactions.append({
+                'date': date_val,
+                'description': description,
+                'value': value,
+                'type': 'CREDIT' if value > 0 else 'DEBIT'
+            })
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar linha {idx}: {e}")
+            continue
+    
+    return transactions
+
+def extract_transactions_from_pdf(file_content: bytes) -> List[Dict]:
+    """Extrai transações de arquivo PDF"""
+    transactions = []
+    
+    try:
+        with pdfplumber.open(io.BytesIO(file_content)) as pdf:
+            # Primeiro, tentar extrair tabelas
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    if not table or len(table) < 2:
+                        continue
+                    
+                    # Detectar colunas
+                    header = [str(h).upper() if h else '' for h in table[0]]
+                    
+                    date_col = None
+                    desc_col = None
+                    value_col = None
+                    debit_col = None
+                    credit_col = None
+                    
+                    for i, h in enumerate(header):
+                        if any(x in h for x in ['DATA', 'DATE', 'DT']):
+                            date_col = i
+                        elif any(x in h for x in ['DESCRIÇÃO', 'DESCRICAO', 'HISTÓRICO', 'HISTORICO', 'MEMO']):
+                            desc_col = i
+                        elif any(x in h for x in ['DÉBITO', 'DEBITO', 'SAÍDA', 'SAIDA']):
+                            debit_col = i
+                        elif any(x in h for x in ['CRÉDITO', 'CREDITO', 'ENTRADA']):
+                            credit_col = i
+                        elif any(x in h for x in ['VALOR', 'VALUE']):
+                            value_col = i
+                    
+                    for row in table[1:]:
+                        if not row or all(not cell for cell in row):
+                            continue
+                        
+                        # Data
+                        date_val = None
+                        if date_col is not None and date_col < len(row) and row[date_col]:
+                            match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', str(row[date_col]))
+                            if match:
+                                date_val = match.group(1)
+                                if len(date_val) == 5:
+                                    date_val += "/2025"
+                        
+                        if not date_val:
+                            continue
+                        
+                        # Descrição
+                        description = ""
+                        if desc_col is not None and desc_col < len(row) and row[desc_col]:
+                            description = str(row[desc_col]).strip()
+                        
+                        if not description:
+                            continue
+                        
+                        # Valor
+                        value = 0
+                        if debit_col is not None and credit_col is not None:
+                            debit_val = row[debit_col] if debit_col < len(row) else None
+                            credit_val = row[credit_col] if credit_col < len(row) else None
+                            
+                            if debit_val and str(debit_val).strip():
+                                value = -abs(parse_brazilian_number(str(debit_val)))
+                            elif credit_val and str(credit_val).strip():
+                                value = abs(parse_brazilian_number(str(credit_val)))
+                        elif value_col is not None and value_col < len(row) and row[value_col]:
+                            value = parse_brazilian_number(str(row[value_col]))
+                        
+                        if value != 0:
+                            transactions.append({
+                                'date': date_val,
+                                'description': description,
+                                'value': value,
+                                'type': 'CREDIT' if value > 0 else 'DEBIT'
+                            })
+            
+            # Se não encontrou tabelas, extrair por texto
+            if not transactions:
+                full_text = ""
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        full_text += text + "\n"
+                
+                for line in full_text.split('\n'):
+                    date_match = re.search(r'(\d{2}/\d{2}/\d{4}|\d{2}/\d{2})', line)
+                    if not date_match:
+                        continue
+                    
+                    date_str = date_match.group(1)
+                    if len(date_str) == 5:
+                        date_str += "/2025"
+                    
+                    # Buscar valores
+                    value_matches = re.findall(r'([+-]?\s*\d{1,3}(?:\.\d{3})*,\d{2}-?)', line)
+                    if not value_matches:
+                        continue
+                    
+                    value_str = value_matches[-1]
+                    is_negative = value_str.startswith('-') or value_str.endswith('-')
+                    value_str = value_str.replace('.', '').replace(',', '.').replace('-', '').replace('+', '').strip()
+                    
+                    try:
+                        value = float(value_str)
+                        if is_negative:
+                            value = -value
+                    except:
+                        continue
+                    
+                    # Descrição
+                    date_end = date_match.end()
+                    value_start = line.find(value_matches[-1])
+                    description = line[date_end:value_start].strip() if value_start > date_end else ""
+                    description = re.sub(r'\s+', ' ', description)
+                    
+                    if description and value != 0:
+                        transactions.append({
+                            'date': date_str,
+                            'description': description,
+                            'value': value,
+                            'type': 'CREDIT' if value > 0 else 'DEBIT'
+                        })
+    
+    except Exception as e:
+        logger.error(f"Erro ao processar PDF: {e}")
+    
+    return transactions
+
+def generate_ofx_content(transactions: List[Dict], bank_name: str = "BANCO") -> str:
+    """Gera conteúdo OFX a partir das transações"""
+    
+    # Header OFX
+    ofx_content = """OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+ENCODING:USASCII
+CHARSET:1252
+COMPRESSION:NONE
+OLDFILEUID:NONE
+NEWFILEUID:NONE
+
+<OFX>
+<SIGNONMSGSRSV1>
+<SONRS>
+<STATUS>
+<CODE>0
+<SEVERITY>INFO
+</STATUS>
+<DTSERVER>{dtserver}
+<LANGUAGE>POR
+</SONRS>
+</SIGNONMSGSRSV1>
+<BANKMSGSRSV1>
+<STMTTRNRS>
+<TRNUID>1
+<STATUS>
+<CODE>0
+<SEVERITY>INFO
+</STATUS>
+<STMTRS>
+<CURDEF>BRL
+<BANKACCTFROM>
+<BANKID>0000
+<ACCTID>0000000000
+<ACCTTYPE>CHECKING
+</BANKACCTFROM>
+<BANKTRANLIST>
+<DTSTART>{dtstart}
+<DTEND>{dtend}
+"""
+    
+    # Determinar datas
+    now = datetime.now()
+    dtserver = now.strftime('%Y%m%d%H%M%S')
+    
+    dates = []
+    for t in transactions:
+        try:
+            parts = t['date'].split('/')
+            if len(parts) == 3:
+                day, month, year = parts
+                dates.append(datetime(int(year), int(month), int(day)))
+        except:
+            pass
+    
+    if dates:
+        dtstart = min(dates).strftime('%Y%m%d')
+        dtend = max(dates).strftime('%Y%m%d')
+    else:
+        dtstart = dtend = now.strftime('%Y%m%d')
+    
+    ofx_content = ofx_content.format(
+        dtserver=dtserver,
+        dtstart=dtstart,
+        dtend=dtend
+    )
+    
+    # Adicionar transações
+    for i, t in enumerate(transactions):
+        # Converter data para formato OFX (YYYYMMDD)
+        try:
+            parts = t['date'].split('/')
+            if len(parts) == 3:
+                day, month, year = parts
+                dt_posted = f"{year}{month.zfill(2)}{day.zfill(2)}"
+            else:
+                dt_posted = now.strftime('%Y%m%d')
+        except:
+            dt_posted = now.strftime('%Y%m%d')
+        
+        trn_type = t['type']
+        trn_amt = t['value']
+        fit_id = t.get('fit_id', str(uuid.uuid4())[:12])
+        name = t['description'][:64]  # Limitar a 64 caracteres
+        
+        ofx_content += f"""<STMTTRN>
+<TRNTYPE>{trn_type}
+<DTPOSTED>{dt_posted}
+<TRNAMT>{trn_amt:.2f}
+<FITID>{fit_id}
+<NAME>{name}
+</STMTTRN>
+"""
+    
+    # Footer OFX
+    ofx_content += """</BANKTRANLIST>
+<LEDGERBAL>
+<BALAMT>0.00
+<DTASOF>{dtasof}
+</LEDGERBAL>
+</STMTRS>
+</STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>
+""".format(dtasof=now.strftime('%Y%m%d'))
+    
+    return ofx_content
+
+@api_router.post("/converter/preview")
+async def preview_conversion(file: UploadFile = File(...)):
+    """Faz preview das transações extraídas do arquivo"""
+    
+    file_content = await file.read()
+    file_name = file.filename.lower()
+    
+    # Identificar tipo de arquivo
+    if file_name.endswith('.pdf'):
+        file_type = 'PDF'
+        transactions = extract_transactions_from_pdf(file_content)
+    elif file_name.endswith(('.xlsx', '.xls')):
+        file_type = 'Excel'
+        transactions = extract_transactions_from_excel(file_content, file_name)
+    elif file_name.endswith('.csv'):
+        file_type = 'CSV'
+        transactions = extract_transactions_from_excel(file_content, file_name)
+    else:
+        raise HTTPException(status_code=400, detail="Formato de arquivo não suportado. Use PDF, XLSX, XLS ou CSV.")
+    
+    if not transactions:
+        raise HTTPException(status_code=400, detail="Não foi possível extrair transações do arquivo. Verifique se o formato está correto.")
+    
+    # Calcular totais
+    total_credits = sum(t['value'] for t in transactions if t['value'] > 0)
+    total_debits = sum(abs(t['value']) for t in transactions if t['value'] < 0)
+    balance = total_credits - total_debits
+    
+    # Criar objetos ExtractedTransaction
+    extracted = [
+        ExtractedTransaction(
+            date=t['date'],
+            description=t['description'],
+            value=t['value'],
+            type=t['type'],
+            fit_id=str(uuid.uuid4())[:12]
+        )
+        for t in transactions
+    ]
+    
+    return ConversionPreview(
+        file_name=file.filename,
+        file_type=file_type,
+        total_transactions=len(transactions),
+        total_credits=total_credits,
+        total_debits=total_debits,
+        balance=balance,
+        transactions=extracted
+    )
+
+@api_router.post("/converter/generate-ofx")
+async def generate_ofx_file(
+    transactions: List[ExtractedTransaction],
+    bank_name: str = "BANCO"
+):
+    """Gera arquivo OFX a partir das transações"""
+    
+    # Converter para dicionários
+    trans_list = [
+        {
+            'date': t.date,
+            'description': t.description,
+            'value': t.value,
+            'type': t.type,
+            'fit_id': t.fit_id
+        }
+        for t in transactions
+    ]
+    
+    # Gerar conteúdo OFX
+    ofx_content = generate_ofx_content(trans_list, bank_name)
+    
+    # Salvar em arquivo temporário
+    temp_file = f"/tmp/extrato_{uuid.uuid4()}.ofx"
+    with open(temp_file, 'w', encoding='utf-8') as f:
+        f.write(ofx_content)
+    
+    return FileResponse(
+        temp_file,
+        media_type='application/x-ofx',
+        filename=f"extrato_convertido_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ofx"
+    )
+
+@api_router.post("/converter/import-to-system")
+async def import_converted_to_system(
+    transactions: List[ExtractedTransaction],
+    company_id: str,
+    chart_id: str,
+    bank_name: str = "BANCO",
+    period: str = ""
+):
+    """Importa as transações convertidas diretamente para o sistema de conciliação"""
+    
+    # Verificar empresa e plano de contas
+    company = await db.companies.find_one({"id": company_id}, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    chart = await db.chart_of_accounts.find_one({"id": chart_id}, {"_id": 0})
+    if not chart:
+        raise HTTPException(status_code=404, detail="Plano de contas não encontrado")
+    
+    # Determinar período se não informado
+    if not period:
+        dates = [t.date for t in transactions]
+        if dates:
+            # Pegar o mês/ano mais comum
+            parts = dates[0].split('/')
+            if len(parts) == 3:
+                period = f"{parts[1]}/{parts[2]}"
+            else:
+                period = datetime.now().strftime('%m/%Y')
+        else:
+            period = datetime.now().strftime('%m/%Y')
+    
+    # Calcular totais
+    total_inflows = sum(t.value for t in transactions if t.value > 0)
+    total_outflows = sum(abs(t.value) for t in transactions if t.value < 0)
+    
+    # Criar o bank statement
+    statement_id = str(uuid.uuid4())
+    statement = {
+        'id': statement_id,
+        'company_id': company_id,
+        'chart_id': chart_id,
+        'bank_name': bank_name,
+        'period': period,
+        'file_name': f'convertido_ofx_{period.replace("/", "_")}.ofx',
+        'total_transactions': len(transactions),
+        'classified_count': 0,
+        'manual_count': len(transactions),
+        'total_inflows': total_inflows,
+        'total_outflows': total_outflows,
+        'balance': total_inflows - total_outflows,
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.bank_statements.insert_one(statement)
+    
+    # Criar transações
+    created_transactions = []
+    for t in transactions:
+        # Tentar classificar usando histórico e regras
+        classification = await classify_transaction(
+            t.description,
+            'C' if t.value > 0 else 'D',
+            company_id,
+            chart_id
+        )
+        
+        trans = {
+            'id': str(uuid.uuid4()),
+            'statement_id': statement_id,
+            'date': t.date,
+            'description': t.description,
+            'amount': abs(t.value),
+            'transaction_type': 'C' if t.value > 0 else 'D',
+            'debit_account': classification['debit_account'],
+            'credit_account': classification['credit_account'],
+            'status': classification['status'],
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.transactions.insert_one(trans)
+        created_transactions.append(trans)
+    
+    # Atualizar contagem de classificados
+    classified_count = len([t for t in created_transactions if t['status'] == 'CLASSIFICADO'])
+    manual_count = len(transactions) - classified_count
+    
+    await db.bank_statements.update_one(
+        {'id': statement_id},
+        {'$set': {'classified_count': classified_count, 'manual_count': manual_count}}
+    )
+    
+    return {
+        'statement_id': statement_id,
+        'total_transactions': len(transactions),
+        'classified_count': classified_count,
+        'manual_count': manual_count,
+        'message': 'Extrato importado com sucesso para o sistema de conciliação'
+    }
+
 # Companies
 @api_router.post("/companies", response_model=Company)
 async def create_company(company: CompanyCreate):
