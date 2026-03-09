@@ -10,7 +10,7 @@ import History from './pages/History';
 import StatementDetails from './pages/StatementDetails';
 import Settings from './pages/Settings';
 import AccountingProcesses from './pages/AccountingProcesses';
-import OFXConverter from './pages/OFXConverter';
+// import OFXConverter from './pages/OFXConverter'; // STANDBY - Módulo desativado temporariamente
 import './App.css';
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
             <Route path="/empresas" element={<Companies />} />
             <Route path="/plano-contas" element={<ChartOfAccounts />} />
             <Route path="/novo-processamento" element={<NewProcessing />} />
-            <Route path="/conversor-ofx" element={<OFXConverter />} />
+            {/* <Route path="/conversor-ofx" element={<OFXConverter />} /> */} {/* STANDBY */}
             <Route path="/historico" element={<History />} />
             <Route path="/historico/:id" element={<StatementDetails />} />
             <Route path="/processamentos" element={<AccountingProcesses />} />
