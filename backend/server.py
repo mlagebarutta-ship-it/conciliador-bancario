@@ -33,6 +33,145 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# ============= JWT CONFIGURATION =============
+JWT_SECRET = os.environ.get('JWT_SECRET', secrets.token_hex(32))
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = 24
+
+security = HTTPBearer(auto_error=False)
+
+# ============= USER MODELS =============
+
+class User(BaseModel):
+    """Modelo de usuário do sistema"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nome: str
+    email: str
+    senha: str  # Hash da senha
+    perfil: str = "colaborador"  # "administrador" ou "colaborador"
+    status: str = "ativo"  # "ativo" ou "inativo"
+    data_criacao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserCreate(BaseModel):
+    nome: str
+    email: str
+    senha: str
+    perfil: str = "colaborador"
+
+class UserUpdate(BaseModel):
+    nome: Optional[str] = None
+    email: Optional[str] = None
+    senha: Optional[str] = None
+    perfil: Optional[str] = None
+    status: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    senha: str
+
+class UserResponse(BaseModel):
+    id: str
+    nome: str
+    email: str
+    perfil: str
+    status: str
+    data_criacao: str
+
+class UserEmpresa(BaseModel):
+    """Vínculo entre usuário e empresa"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    usuario_id: str
+    empresa_id: str
+
+class ActivityLog(BaseModel):
+    """Log de atividades do sistema"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    usuario_id: str
+    usuario_nome: str
+    acao: str
+    detalhes: Optional[str] = None
+    empresa_id: Optional[str] = None
+    empresa_nome: Optional[str] = None
+    data_hora: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ============= AUTH HELPERS =============
+
+def hash_password(password: str) -> str:
+    """Gera hash da senha"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verifica se a senha está correta"""
+    return hash_password(password) == hashed
+
+def create_token(user_id: str, email: str, perfil: str) -> str:
+    """Cria token JWT"""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "perfil": perfil,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def decode_token(token: str) -> Optional[Dict]:
+    """Decodifica token JWT"""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[Dict]:
+    """Obtém usuário atual do token"""
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    payload = decode_token(token)
+    
+    if not payload:
+        return None
+    
+    user = await db.usuarios.find_one({"id": payload["user_id"]}, {"_id": 0, "senha": 0})
+    if not user or user.get("status") != "ativo":
+        return None
+    
+    return user
+
+async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
+    """Exige autenticação"""
+    user = await get_current_user(credentials)
+    if not user:
+        raise HTTPException(status_code=401, detail="Não autorizado")
+    return user
+
+async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
+    """Exige perfil de administrador"""
+    user = await require_auth(credentials)
+    if user.get("perfil") != "administrador":
+        raise HTTPException(status_code=403, detail="Acesso negado. Requer perfil de administrador.")
+    return user
+
+async def log_activity(usuario_id: str, usuario_nome: str, acao: str, detalhes: str = None, empresa_id: str = None, empresa_nome: str = None):
+    """Registra atividade no log"""
+    log = ActivityLog(
+        usuario_id=usuario_id,
+        usuario_nome=usuario_nome,
+        acao=acao,
+        detalhes=detalhes,
+        empresa_id=empresa_id,
+        empresa_nome=empresa_nome
+    )
+    doc = log.model_dump()
+    doc['data_hora'] = doc['data_hora'].isoformat()
+    await db.activity_logs.insert_one(doc)
+
 # ============= MODELS =============
 
 # Status de processamento contábil
