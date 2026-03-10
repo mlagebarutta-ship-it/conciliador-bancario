@@ -47,16 +47,16 @@ export const SidebarLayout = ({ children, user, onLogout }) => {
   };
   
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#0F1016] border-r border-white/5 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-white/5">
+    <div className="flex h-screen">
+      {/* Sidebar - Fixo na tela */}
+      <aside className="w-64 bg-[#0F1016] border-r border-white/5 flex flex-col h-screen fixed left-0 top-0">
+        {/* Logo - Fixo no topo */}
+        <div className="p-6 border-b border-white/5 flex-shrink-0">
           <h1 className="font-heading text-xl font-bold text-white">Domínio Bridge</h1>
           <p className="text-xs text-slate-500 mt-1">Conciliação Contábil</p>
         </div>
         
-        {/* Navigation */}
+        {/* Navigation - Scrollável */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item, index) => (
             <React.Fragment key={item.path}>
@@ -86,8 +86,8 @@ export const SidebarLayout = ({ children, user, onLogout }) => {
           ))}
         </nav>
         
-        {/* User Info & Logout */}
-        <div className="p-4 border-t border-white/5">
+        {/* User Info & Logout - Fixo no rodapé */}
+        <div className="p-4 border-t border-white/5 flex-shrink-0 bg-[#0F1016]">
           <div className="flex items-center gap-3 px-4 py-2 mb-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
               isAdmin ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-indigo-500 to-blue-600'
@@ -118,8 +118,8 @@ export const SidebarLayout = ({ children, user, onLogout }) => {
         </div>
       </aside>
       
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-[#0B0D14]">
+      {/* Main Content - Com margem para compensar sidebar fixa */}
+      <main className="flex-1 ml-64 overflow-auto bg-[#0B0D14] min-h-screen">
         {children}
       </main>
     </div>
