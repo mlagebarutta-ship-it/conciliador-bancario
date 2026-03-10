@@ -1185,6 +1185,327 @@ async def classify_transaction(description: str, amount: float, trans_type: str,
 async def root():
     return {"message": "API Agente Contábil - Sistema Domínio"}
 
+# ============= AUTH ROUTES =============
+
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    """Login do usuário"""
+    user = await db.usuarios.find_one({"email": credentials.email.lower()}, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+    
+    if not verify_password(credentials.senha, user['senha']):
+        raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+    
+    if user.get('status') != 'ativo':
+        raise HTTPException(status_code=401, detail="Usuário inativo. Contate o administrador.")
+    
+    token = create_token(user['id'], user['email'], user['perfil'])
+    
+    # Log de atividade
+    await log_activity(user['id'], user['nome'], "Login realizado")
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user['id'],
+            "nome": user['nome'],
+            "email": user['email'],
+            "perfil": user['perfil']
+        }
+    }
+
+@api_router.get("/auth/me")
+async def get_me(current_user: Dict = Depends(require_auth)):
+    """Retorna dados do usuário logado"""
+    # Buscar empresas do usuário se for colaborador
+    empresas = []
+    if current_user.get('perfil') == 'colaborador':
+        vinculos = await db.usuario_empresas.find({"usuario_id": current_user['id']}, {"_id": 0}).to_list(1000)
+        empresa_ids = [v['empresa_id'] for v in vinculos]
+        if empresa_ids:
+            empresas = await db.companies.find({"id": {"$in": empresa_ids}}, {"_id": 0}).to_list(1000)
+    
+    return {
+        "id": current_user['id'],
+        "nome": current_user['nome'],
+        "email": current_user['email'],
+        "perfil": current_user['perfil'],
+        "empresas_vinculadas": empresas
+    }
+
+@api_router.post("/auth/change-password")
+async def change_password(
+    senha_atual: str,
+    nova_senha: str,
+    current_user: Dict = Depends(require_auth)
+):
+    """Altera a senha do usuário logado"""
+    user = await db.usuarios.find_one({"id": current_user['id']}, {"_id": 0})
+    
+    if not verify_password(senha_atual, user['senha']):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+    
+    await db.usuarios.update_one(
+        {"id": current_user['id']},
+        {"$set": {"senha": hash_password(nova_senha)}}
+    )
+    
+    await log_activity(current_user['id'], current_user['nome'], "Senha alterada")
+    
+    return {"message": "Senha alterada com sucesso"}
+
+# ============= USER MANAGEMENT ROUTES =============
+
+@api_router.get("/usuarios")
+async def list_users(current_user: Dict = Depends(require_admin)):
+    """Lista todos os usuários (apenas admin)"""
+    users = await db.usuarios.find({}, {"_id": 0, "senha": 0}).to_list(1000)
+    
+    # Converter datas
+    for u in users:
+        if isinstance(u.get('data_criacao'), str):
+            pass  # Já é string
+        elif u.get('data_criacao'):
+            u['data_criacao'] = u['data_criacao'].isoformat()
+    
+    return users
+
+@api_router.post("/usuarios")
+async def create_user(user_data: UserCreate, current_user: Dict = Depends(require_admin)):
+    """Cria novo usuário (apenas admin)"""
+    # Verificar se email já existe
+    existing = await db.usuarios.find_one({"email": user_data.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    user = User(
+        nome=user_data.nome,
+        email=user_data.email.lower(),
+        senha=hash_password(user_data.senha),
+        perfil=user_data.perfil
+    )
+    
+    doc = user.model_dump()
+    doc['data_criacao'] = doc['data_criacao'].isoformat()
+    
+    await db.usuarios.insert_one(doc)
+    
+    await log_activity(
+        current_user['id'], 
+        current_user['nome'], 
+        "Usuário criado",
+        f"Novo usuário: {user.nome} ({user.email}) - Perfil: {user.perfil}"
+    )
+    
+    return {
+        "id": user.id,
+        "nome": user.nome,
+        "email": user.email,
+        "perfil": user.perfil,
+        "status": user.status,
+        "data_criacao": doc['data_criacao']
+    }
+
+@api_router.get("/usuarios/{user_id}")
+async def get_user(user_id: str, current_user: Dict = Depends(require_admin)):
+    """Retorna dados de um usuário específico"""
+    user = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "senha": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Buscar empresas vinculadas
+    vinculos = await db.usuario_empresas.find({"usuario_id": user_id}, {"_id": 0}).to_list(1000)
+    empresa_ids = [v['empresa_id'] for v in vinculos]
+    
+    empresas = []
+    if empresa_ids:
+        empresas = await db.companies.find({"id": {"$in": empresa_ids}}, {"_id": 0}).to_list(1000)
+    
+    user['empresas_vinculadas'] = empresas
+    
+    return user
+
+@api_router.put("/usuarios/{user_id}")
+async def update_user(user_id: str, user_data: UserUpdate, current_user: Dict = Depends(require_admin)):
+    """Atualiza usuário (apenas admin)"""
+    update_fields = {}
+    
+    if user_data.nome:
+        update_fields['nome'] = user_data.nome
+    if user_data.email:
+        # Verificar se novo email já existe
+        existing = await db.usuarios.find_one({"email": user_data.email.lower(), "id": {"$ne": user_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email já cadastrado")
+        update_fields['email'] = user_data.email.lower()
+    if user_data.senha:
+        update_fields['senha'] = hash_password(user_data.senha)
+    if user_data.perfil:
+        update_fields['perfil'] = user_data.perfil
+    if user_data.status:
+        update_fields['status'] = user_data.status
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+    
+    result = await db.usuarios.update_one({"id": user_id}, {"$set": update_fields})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    await log_activity(
+        current_user['id'],
+        current_user['nome'],
+        "Usuário atualizado",
+        f"ID: {user_id}"
+    )
+    
+    return await db.usuarios.find_one({"id": user_id}, {"_id": 0, "senha": 0})
+
+@api_router.delete("/usuarios/{user_id}")
+async def delete_user(user_id: str, current_user: Dict = Depends(require_admin)):
+    """Exclui usuário (apenas admin)"""
+    # Não permitir excluir a si mesmo
+    if user_id == current_user['id']:
+        raise HTTPException(status_code=400, detail="Não é possível excluir seu próprio usuário")
+    
+    user = await db.usuarios.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Remover vínculos com empresas
+    await db.usuario_empresas.delete_many({"usuario_id": user_id})
+    
+    # Remover usuário
+    await db.usuarios.delete_one({"id": user_id})
+    
+    await log_activity(
+        current_user['id'],
+        current_user['nome'],
+        "Usuário excluído",
+        f"Usuário: {user['nome']} ({user['email']})"
+    )
+    
+    return {"message": "Usuário excluído"}
+
+# ============= USER-COMPANY LINK ROUTES =============
+
+@api_router.post("/usuarios/{user_id}/empresas")
+async def link_user_company(user_id: str, empresa_id: str, current_user: Dict = Depends(require_admin)):
+    """Vincula uma empresa a um usuário"""
+    # Verificar se usuário existe
+    user = await db.usuarios.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verificar se empresa existe
+    empresa = await db.companies.find_one({"id": empresa_id})
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    # Verificar se já está vinculada
+    existing = await db.usuario_empresas.find_one({"usuario_id": user_id, "empresa_id": empresa_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Empresa já vinculada a este usuário")
+    
+    vinculo = UserEmpresa(usuario_id=user_id, empresa_id=empresa_id)
+    await db.usuario_empresas.insert_one(vinculo.model_dump())
+    
+    await log_activity(
+        current_user['id'],
+        current_user['nome'],
+        "Empresa vinculada ao usuário",
+        f"Usuário: {user['nome']} - Empresa: {empresa['name']}"
+    )
+    
+    return {"message": "Empresa vinculada com sucesso"}
+
+@api_router.delete("/usuarios/{user_id}/empresas/{empresa_id}")
+async def unlink_user_company(user_id: str, empresa_id: str, current_user: Dict = Depends(require_admin)):
+    """Remove vínculo entre usuário e empresa"""
+    result = await db.usuario_empresas.delete_one({"usuario_id": user_id, "empresa_id": empresa_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Vínculo não encontrado")
+    
+    await log_activity(
+        current_user['id'],
+        current_user['nome'],
+        "Vínculo empresa-usuário removido",
+        f"Usuário ID: {user_id} - Empresa ID: {empresa_id}"
+    )
+    
+    return {"message": "Vínculo removido"}
+
+@api_router.get("/usuarios/{user_id}/empresas")
+async def get_user_companies(user_id: str, current_user: Dict = Depends(require_admin)):
+    """Lista empresas vinculadas a um usuário"""
+    vinculos = await db.usuario_empresas.find({"usuario_id": user_id}, {"_id": 0}).to_list(1000)
+    empresa_ids = [v['empresa_id'] for v in vinculos]
+    
+    if not empresa_ids:
+        return []
+    
+    empresas = await db.companies.find({"id": {"$in": empresa_ids}}, {"_id": 0}).to_list(1000)
+    return empresas
+
+# ============= ACTIVITY LOG ROUTES =============
+
+@api_router.get("/activity-logs")
+async def get_activity_logs(
+    usuario_id: Optional[str] = None,
+    empresa_id: Optional[str] = None,
+    acao: Optional[str] = None,
+    limit: int = 100,
+    current_user: Dict = Depends(require_admin)
+):
+    """Lista logs de atividade (apenas admin)"""
+    query = {}
+    
+    if usuario_id:
+        query["usuario_id"] = usuario_id
+    if empresa_id:
+        query["empresa_id"] = empresa_id
+    if acao:
+        query["acao"] = {"$regex": acao, "$options": "i"}
+    
+    logs = await db.activity_logs.find(query, {"_id": 0}).sort("data_hora", -1).limit(limit).to_list(limit)
+    
+    return logs
+
+# ============= INIT ADMIN USER =============
+
+@api_router.post("/auth/init-admin")
+async def init_admin():
+    """Cria usuário admin inicial se não existir nenhum"""
+    # Verificar se já existe algum usuário
+    user_count = await db.usuarios.count_documents({})
+    
+    if user_count > 0:
+        raise HTTPException(status_code=400, detail="Sistema já possui usuários cadastrados")
+    
+    admin = User(
+        nome="Administrador",
+        email="admin@dominio.com",
+        senha=hash_password("admin123"),
+        perfil="administrador",
+        status="ativo"
+    )
+    
+    doc = admin.model_dump()
+    doc['data_criacao'] = doc['data_criacao'].isoformat()
+    
+    await db.usuarios.insert_one(doc)
+    
+    return {
+        "message": "Usuário administrador criado com sucesso",
+        "email": "admin@dominio.com",
+        "senha_temporaria": "admin123",
+        "aviso": "Altere a senha após o primeiro login!"
+    }
+
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats():
     """Retorna estatísticas operacionais do escritório contábil"""
