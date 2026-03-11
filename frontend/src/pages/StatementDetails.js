@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Edit2, Save, X, FileText, CheckCircle, AlertCircle, CheckSquare, Square, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 export default function StatementDetails() {
   const { id } = useParams();

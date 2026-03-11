@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'sonner';
 import { 
   Users, 
@@ -18,13 +18,6 @@ import {
   Search,
   Filter
 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
