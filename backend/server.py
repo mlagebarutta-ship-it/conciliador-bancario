@@ -2020,24 +2020,39 @@ async def init_admin():
     }
 
 @api_router.get("/dashboard/stats")
-async def get_dashboard_stats():
+async def get_dashboard_stats(current_user: Dict = Depends(require_auth)):
     """Retorna estatísticas operacionais do escritório contábil"""
+    tenant_id = get_tenant_id(current_user)
     
     # Mês atual para comparação
     now = datetime.now(timezone.utc)
     current_month = f"{now.month:02d}/{now.year}"
     current_year_month = f"{now.year}{now.month:02d}"
     
-    # Buscar todas as empresas
-    companies = await db.companies.find({}, {"_id": 0}).to_list(1000)
+    # Buscar todas as empresas do tenant
+    company_query = {"tenant_id": tenant_id} if tenant_id else {}
+    companies = await db.companies.find(company_query, {"_id": 0}).to_list(1000)
     total_companies = len(companies)
     
-    # Buscar todos os extratos
-    statements = await db.bank_statements.find({}, {"_id": 0}).to_list(10000)
+    # Buscar todos os extratos do tenant
+    statement_query = {"tenant_id": tenant_id} if tenant_id else {}
+    statements = await db.bank_statements.find(statement_query, {"_id": 0}).to_list(10000)
     
-    # Buscar todas as transações pendentes de classificação
-    pending_transactions = await db.transactions.count_documents({"status": "CLASSIFICAR MANUALMENTE"})
-    total_transactions = await db.transactions.count_documents({})
+    # Buscar IDs dos statements do tenant para filtrar transações
+    statement_ids = [s['id'] for s in statements]
+    
+    # Buscar transações dos statements do tenant
+    if statement_ids:
+        pending_transactions = await db.transactions.count_documents({
+            "statement_id": {"$in": statement_ids},
+            "status": "CLASSIFICAR MANUALMENTE"
+        })
+        total_transactions = await db.transactions.count_documents({
+            "statement_id": {"$in": statement_ids}
+        })
+    else:
+        pending_transactions = 0
+        total_transactions = 0
     classified_transactions = total_transactions - pending_transactions
     
     # Agrupar extratos por empresa e encontrar o último mês processado
