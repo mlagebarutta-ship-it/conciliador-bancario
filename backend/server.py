@@ -3630,8 +3630,13 @@ async def upload_statement(
     }
 
 @api_router.get("/bank-statements", response_model=List[BankStatement])
-async def get_statements(company_id: Optional[str] = None):
-    query = {"company_id": company_id} if company_id else {}
+async def get_statements(company_id: Optional[str] = None, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    if company_id:
+        query["company_id"] = company_id
     statements = await db.bank_statements.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for s in statements:
         if isinstance(s.get('created_at'), str):
@@ -3641,8 +3646,12 @@ async def get_statements(company_id: Optional[str] = None):
     return statements
 
 @api_router.get("/bank-statements/{statement_id}", response_model=BankStatement)
-async def get_statement(statement_id: str):
-    statement = await db.bank_statements.find_one({"id": statement_id}, {"_id": 0})
+async def get_statement(statement_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": statement_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    statement = await db.bank_statements.find_one(query, {"_id": 0})
     if not statement:
         raise HTTPException(status_code=404, detail="Extrato não encontrado")
     if isinstance(statement.get('created_at'), str):
@@ -3652,7 +3661,15 @@ async def get_statement(statement_id: str):
     return statement
 
 @api_router.get("/bank-statements/{statement_id}/transactions", response_model=List[Transaction])
-async def get_transactions(statement_id: str):
+async def get_transactions(statement_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    # Verificar se o statement pertence ao tenant
+    statement_query = {"id": statement_id}
+    if tenant_id:
+        statement_query["tenant_id"] = tenant_id
+    statement = await db.bank_statements.find_one(statement_query, {"_id": 0})
+    if not statement:
+        raise HTTPException(status_code=404, detail="Extrato não encontrado")
     transactions = await db.transactions.find({"statement_id": statement_id}, {"_id": 0}).to_list(1000)
     return transactions
 
