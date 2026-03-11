@@ -1707,8 +1707,20 @@ async def init_super_admin():
 
 @api_router.get("/usuarios")
 async def list_users(current_user: Dict = Depends(require_admin)):
-    """Lista todos os usuários (apenas admin)"""
-    users = await db.usuarios.find({}, {"_id": 0, "senha": 0}).to_list(1000)
+    """Lista usuários do escritório (apenas admin do tenant)"""
+    
+    # Super admin usa /superadmin/usuarios
+    if current_user.get('perfil') == PERFIL_SUPER_ADMIN:
+        raise HTTPException(status_code=400, detail="Super Admin deve usar /superadmin/usuarios")
+    
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant não identificado")
+    
+    users = await db.usuarios.find(
+        {"tenant_id": tenant_id},
+        {"_id": 0, "senha": 0}
+    ).to_list(1000)
     
     # Converter datas
     for u in users:
@@ -1721,17 +1733,39 @@ async def list_users(current_user: Dict = Depends(require_admin)):
 
 @api_router.post("/usuarios")
 async def create_user(user_data: UserCreate, current_user: Dict = Depends(require_admin)):
-    """Cria novo usuário (apenas admin)"""
+    """Cria novo usuário no escritório (apenas admin do tenant)"""
+    
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant não identificado")
+    
+    # Verificar limite de usuários do tenant
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if tenant:
+        current_count = await db.usuarios.count_documents({"tenant_id": tenant_id})
+        if current_count >= tenant.get('max_usuarios', 5):
+            raise HTTPException(status_code=400, detail=f"Limite de usuários atingido ({tenant.get('max_usuarios', 5)})")
+    
     # Verificar se email já existe
     existing = await db.usuarios.find_one({"email": user_data.email.lower()})
     if existing:
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     
+    # Colaborador não pode criar admin
+    perfil = user_data.perfil
+    if current_user.get('perfil') == PERFIL_COLABORADOR:
+        perfil = PERFIL_COLABORADOR
+    
+    # Admin do tenant só pode criar colaboradores ou admins do mesmo tenant
+    if perfil not in [PERFIL_COLABORADOR, PERFIL_ADMIN_TENANT]:
+        perfil = PERFIL_COLABORADOR
+    
     user = User(
+        tenant_id=tenant_id,
         nome=user_data.nome,
         email=user_data.email.lower(),
         senha=hash_password(user_data.senha),
-        perfil=user_data.perfil
+        perfil=perfil
     )
     
     doc = user.model_dump()
@@ -1743,7 +1777,9 @@ async def create_user(user_data: UserCreate, current_user: Dict = Depends(requir
         current_user['id'], 
         current_user['nome'], 
         "Usuário criado",
-        f"Novo usuário: {user.nome} ({user.email}) - Perfil: {user.perfil}"
+        f"Novo usuário: {user.nome} ({user.email}) - Perfil: {user.perfil}",
+        tenant_id=tenant_id,
+        tenant_nome=tenant.get('nome') if tenant else None
     )
     
     return {
@@ -1752,23 +1788,38 @@ async def create_user(user_data: UserCreate, current_user: Dict = Depends(requir
         "email": user.email,
         "perfil": user.perfil,
         "status": user.status,
+        "tenant_id": tenant_id,
         "data_criacao": doc['data_criacao']
     }
 
 @api_router.get("/usuarios/{user_id}")
 async def get_user(user_id: str, current_user: Dict = Depends(require_admin)):
-    """Retorna dados de um usuário específico"""
-    user = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "senha": 0})
+    """Retorna dados de um usuário específico do escritório"""
+    
+    tenant_id = current_user.get('tenant_id')
+    
+    # Filtrar por tenant
+    query = {"id": user_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    user = await db.usuarios.find_one(query, {"_id": 0, "senha": 0})
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
     # Buscar empresas vinculadas
-    vinculos = await db.usuario_empresas.find({"usuario_id": user_id}, {"_id": 0}).to_list(1000)
+    vinculos = await db.usuario_empresas.find({
+        "usuario_id": user_id,
+        "tenant_id": tenant_id
+    }, {"_id": 0}).to_list(1000)
     empresa_ids = [v['empresa_id'] for v in vinculos]
     
     empresas = []
     if empresa_ids:
-        empresas = await db.companies.find({"id": {"$in": empresa_ids}}, {"_id": 0}).to_list(1000)
+        empresas = await db.companies.find({
+            "id": {"$in": empresa_ids},
+            "tenant_id": tenant_id
+        }, {"_id": 0}).to_list(1000)
     
     user['empresas_vinculadas'] = empresas
     
@@ -1776,7 +1827,15 @@ async def get_user(user_id: str, current_user: Dict = Depends(require_admin)):
 
 @api_router.put("/usuarios/{user_id}")
 async def update_user(user_id: str, user_data: UserUpdate, current_user: Dict = Depends(require_admin)):
-    """Atualiza usuário (apenas admin)"""
+    """Atualiza usuário do escritório (apenas admin do tenant)"""
+    
+    tenant_id = current_user.get('tenant_id')
+    
+    # Verificar se usuário pertence ao mesmo tenant
+    user = await db.usuarios.find_one({"id": user_id, "tenant_id": tenant_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
     update_fields = {}
     
     if user_data.nome:
