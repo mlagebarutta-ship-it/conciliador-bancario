@@ -2370,10 +2370,16 @@ async def bulk_create_accounting_processes(
     start_month: int,
     end_year: int,
     end_month: int,
-    responsible: Optional[str] = None
+    responsible: Optional[str] = None,
+    current_user: Dict = Depends(require_auth)
 ):
     """Cria múltiplos processamentos de uma vez (para preencher meses pendentes)"""
-    company = await db.companies.find_one({"id": company_id}, {"_id": 0})
+    tenant_id = get_tenant_id(current_user)
+    
+    company_query = {"id": company_id}
+    if tenant_id:
+        company_query["tenant_id"] = tenant_id
+    company = await db.companies.find_one(company_query, {"_id": 0})
     if not company:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     
@@ -2383,15 +2389,19 @@ async def bulk_create_accounting_processes(
     
     while current <= end:
         # Verificar se já existe
-        existing = await db.accounting_processes.find_one({
+        existing_query = {
             "company_id": company_id,
             "year": current.year,
             "month": current.month,
             "is_archived": False
-        })
+        }
+        if tenant_id:
+            existing_query["tenant_id"] = tenant_id
+        existing = await db.accounting_processes.find_one(existing_query)
         
         if not existing:
             process_obj = AccountingProcess(
+                tenant_id=tenant_id,
                 company_id=company_id,
                 company_name=company['name'],
                 year=current.year,
@@ -2418,16 +2428,25 @@ async def bulk_create_accounting_processes(
     return {"created": created, "count": len(created)}
 
 @api_router.get("/accounting-processes/{process_id}")
-async def get_accounting_process(process_id: str):
+async def get_accounting_process(process_id: str, current_user: Dict = Depends(require_auth)):
     """Retorna detalhes de um processamento"""
-    process = await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": process_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    process = await db.accounting_processes.find_one(query, {"_id": 0})
     if not process:
         raise HTTPException(status_code=404, detail="Processamento não encontrado")
     return process
 
 @api_router.put("/accounting-processes/{process_id}")
-async def update_accounting_process(process_id: str, update: AccountingProcessUpdate):
+async def update_accounting_process(process_id: str, update: AccountingProcessUpdate, current_user: Dict = Depends(require_auth)):
     """Atualiza um processamento"""
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": process_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
@@ -2436,28 +2455,36 @@ async def update_accounting_process(process_id: str, update: AccountingProcessUp
         update_data['completed_at'] = datetime.now(timezone.utc).isoformat()
     
     result = await db.accounting_processes.update_one(
-        {"id": process_id},
+        query,
         {"$set": update_data}
     )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Processamento não encontrado")
     
-    return await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+    return await db.accounting_processes.find_one(query, {"_id": 0})
 
 @api_router.delete("/accounting-processes/{process_id}")
-async def delete_accounting_process(process_id: str):
+async def delete_accounting_process(process_id: str, current_user: Dict = Depends(require_auth)):
     """Exclui um processamento"""
-    result = await db.accounting_processes.delete_one({"id": process_id})
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": process_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.accounting_processes.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Processamento não encontrado")
     return {"message": "Processamento excluído"}
 
 @api_router.post("/accounting-processes/{process_id}/archive")
-async def archive_accounting_process(process_id: str):
+async def archive_accounting_process(process_id: str, current_user: Dict = Depends(require_auth)):
     """Arquiva um processamento"""
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": process_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     result = await db.accounting_processes.update_one(
-        {"id": process_id},
+        query,
         {"$set": {"is_archived": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     if result.matched_count == 0:
@@ -2465,8 +2492,9 @@ async def archive_accounting_process(process_id: str):
     return {"message": "Processamento arquivado"}
 
 @api_router.post("/accounting-processes/archive-old")
-async def archive_old_processes(months_old: int = 12):
+async def archive_old_processes(months_old: int = 12, current_user: Dict = Depends(require_auth)):
     """Arquiva automaticamente processamentos concluídos há mais de X meses"""
+    tenant_id = get_tenant_id(current_user)
     cutoff_date = datetime.now(timezone.utc)
     cutoff_year = cutoff_date.year
     cutoff_month = cutoff_date.month - months_old
@@ -2484,6 +2512,8 @@ async def archive_old_processes(months_old: int = 12):
             {"$and": [{"year": cutoff_year}, {"month": {"$lt": cutoff_month}}]}
         ]
     }
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     
     result = await db.accounting_processes.update_many(
         query,
@@ -2493,15 +2523,23 @@ async def archive_old_processes(months_old: int = 12):
     return {"archived_count": result.modified_count}
 
 @api_router.post("/accounting-processes/{process_id}/link-statement")
-async def link_statement_to_process(process_id: str, statement_id: str):
+async def link_statement_to_process(process_id: str, statement_id: str, current_user: Dict = Depends(require_auth)):
     """Vincula um extrato bancário a um processamento"""
+    tenant_id = get_tenant_id(current_user)
+    
     # Verificar se o processamento existe
-    process = await db.accounting_processes.find_one({"id": process_id}, {"_id": 0})
+    process_query = {"id": process_id}
+    if tenant_id:
+        process_query["tenant_id"] = tenant_id
+    process = await db.accounting_processes.find_one(process_query, {"_id": 0})
     if not process:
         raise HTTPException(status_code=404, detail="Processamento não encontrado")
     
     # Verificar se o extrato existe
-    statement = await db.bank_statements.find_one({"id": statement_id}, {"_id": 0})
+    statement_query = {"id": statement_id}
+    if tenant_id:
+        statement_query["tenant_id"] = tenant_id
+    statement = await db.bank_statements.find_one(statement_query, {"_id": 0})
     if not statement:
         raise HTTPException(status_code=404, detail="Extrato não encontrado")
     
@@ -2519,7 +2557,7 @@ async def link_statement_to_process(process_id: str, statement_id: str):
         classified_trans += len([t for t in trans if t.get('status') == 'CLASSIFICADO'])
     
     await db.accounting_processes.update_one(
-        {"id": process_id},
+        process_query,
         {"$set": {
             "statement_ids": statement_ids,
             "total_transactions": total_trans,
