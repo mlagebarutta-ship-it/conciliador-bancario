@@ -34,15 +34,15 @@ export default function StatementDetails() {
   const loadData = async () => {
     try {
       const [statementRes, transactionsRes] = await Promise.all([
-        axios.get(`${API}/bank-statements/${id}`),
-        axios.get(`${API}/bank-statements/${id}/transactions`)
+        api.get(`/bank-statements/${id}`),
+        api.get(`/bank-statements/${id}/transactions`)
       ]);
       
       setStatement(statementRes.data);
       setTransactions(transactionsRes.data);
       
       // Buscar empresa
-      const companyRes = await axios.get(`${API}/companies/${statementRes.data.company_id}`);
+      const companyRes = await api.get(`/companies/${statementRes.data.company_id}`);
       setCompany(companyRes.data);
     } catch (error) {
       toast.error('Erro ao carregar dados');
@@ -54,14 +54,14 @@ export default function StatementDetails() {
   
   const handleUpdateTransaction = async (transId) => {
     try {
-      await axios.put(`${API}/transactions/${transId}`, editData);
+      await api.put(`/transactions/${transId}`, editData);
       setTransactions(transactions.map(t => t.id === transId ? { ...t, ...editData } : t));
       setEditingId(null);
       setEditData({});
       toast.success('Transação atualizada');
       
       // Recarregar statement para atualizar contadores
-      const statementRes = await axios.get(`${API}/bank-statements/${id}`);
+      const statementRes = await api.get(`/bank-statements/${id}`);
       setStatement(statementRes.data);
     } catch (error) {
       toast.error('Erro ao atualizar transação');
@@ -91,7 +91,7 @@ export default function StatementDetails() {
       if (bulkEditData.status) updateData.status = bulkEditData.status;
       
       // Chamar API de atualização em massa
-      await axios.put(`${API}/transactions/bulk-update`, {
+      await api.put(`/transactions/bulk-update`, {
         transaction_ids: Array.from(selectedIds),
         update_data: updateData
       });
@@ -109,7 +109,7 @@ export default function StatementDetails() {
       toast.success(`${selectedIds.size} lançamentos atualizados com sucesso!`);
       
       // Recarregar statement para atualizar contadores
-      const statementRes = await axios.get(`${API}/bank-statements/${id}`);
+      const statementRes = await api.get(`/bank-statements/${id}`);
       setStatement(statementRes.data);
     } catch (error) {
       toast.error('Erro ao atualizar lançamentos em massa');
@@ -140,7 +140,7 @@ export default function StatementDetails() {
   
   const handleExport = async () => {
     try {
-      const response = await axios.get(`${API}/bank-statements/${id}/export`, {
+      const response = await api.get(`/bank-statements/${id}/export`, {
         responseType: 'blob'
       });
       

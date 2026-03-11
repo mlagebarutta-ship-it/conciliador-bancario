@@ -46,8 +46,8 @@ export default function UserManagement() {
   const loadData = async () => {
     try {
       const [usersRes, companiesRes] = await Promise.all([
-        axios.get(`${API}/usuarios`, { headers: getAuthHeader() }),
-        axios.get(`${API}/companies`, { headers: getAuthHeader() })
+        api.get(`/usuarios`, { headers: getAuthHeader() }),
+        api.get(`/companies`, { headers: getAuthHeader() })
       ]);
       setUsers(usersRes.data);
       setCompanies(companiesRes.data);
@@ -67,11 +67,11 @@ export default function UserManagement() {
         const updateData = { ...formData };
         if (!updateData.senha) delete updateData.senha; // Não enviar senha vazia
         
-        await axios.put(`${API}/usuarios/${editingUser.id}`, updateData, { headers: getAuthHeader() });
+        await api.put(`/usuarios/${editingUser.id}`, updateData, { headers: getAuthHeader() });
         toast.success('Usuário atualizado com sucesso');
       } else {
         // Criar usuário
-        await axios.post(`${API}/usuarios`, formData, { headers: getAuthHeader() });
+        await api.post(`/usuarios`, formData, { headers: getAuthHeader() });
         toast.success('Usuário criado com sucesso');
       }
       
@@ -100,7 +100,7 @@ export default function UserManagement() {
     if (!window.confirm(`Tem certeza que deseja excluir o usuário "${user.nome}"?`)) return;
     
     try {
-      await axios.delete(`${API}/usuarios/${user.id}`, { headers: getAuthHeader() });
+      await api.delete(`/usuarios/${user.id}`, { headers: getAuthHeader() });
       toast.success('Usuário excluído');
       loadData();
     } catch (error) {
@@ -113,7 +113,7 @@ export default function UserManagement() {
     const newStatus = user.status === 'ativo' ? 'inativo' : 'ativo';
     
     try {
-      await axios.put(`${API}/usuarios/${user.id}`, { status: newStatus }, { headers: getAuthHeader() });
+      await api.put(`/usuarios/${user.id}`, { status: newStatus }, { headers: getAuthHeader() });
       toast.success(`Usuário ${newStatus === 'ativo' ? 'ativado' : 'desativado'}`);
       loadData();
     } catch (error) {
@@ -123,7 +123,7 @@ export default function UserManagement() {
 
   const openCompanyModal = async (user) => {
     try {
-      const response = await axios.get(`${API}/usuarios/${user.id}`, { headers: getAuthHeader() });
+      const response = await api.get(`/usuarios/${user.id}`, { headers: getAuthHeader() });
       setSelectedUser(response.data);
       setShowCompanyModal(true);
     } catch (error) {
@@ -133,11 +133,11 @@ export default function UserManagement() {
 
   const handleLinkCompany = async (empresaId) => {
     try {
-      await axios.post(`${API}/usuarios/${selectedUser.id}/empresas?empresa_id=${empresaId}`, {}, { headers: getAuthHeader() });
+      await api.post(`/usuarios/${selectedUser.id}/empresas?empresa_id=${empresaId}`, {}, { headers: getAuthHeader() });
       toast.success('Empresa vinculada');
       
       // Recarregar dados do usuário
-      const response = await axios.get(`${API}/usuarios/${selectedUser.id}`, { headers: getAuthHeader() });
+      const response = await api.get(`/usuarios/${selectedUser.id}`, { headers: getAuthHeader() });
       setSelectedUser(response.data);
     } catch (error) {
       const message = error.response?.data?.detail || 'Erro ao vincular empresa';
@@ -147,11 +147,11 @@ export default function UserManagement() {
 
   const handleUnlinkCompany = async (empresaId) => {
     try {
-      await axios.delete(`${API}/usuarios/${selectedUser.id}/empresas/${empresaId}`, { headers: getAuthHeader() });
+      await api.delete(`/usuarios/${selectedUser.id}/empresas/${empresaId}`, { headers: getAuthHeader() });
       toast.success('Vínculo removido');
       
       // Recarregar dados do usuário
-      const response = await axios.get(`${API}/usuarios/${selectedUser.id}`, { headers: getAuthHeader() });
+      const response = await api.get(`/usuarios/${selectedUser.id}`, { headers: getAuthHeader() });
       setSelectedUser(response.data);
     } catch (error) {
       toast.error('Erro ao remover vínculo');
