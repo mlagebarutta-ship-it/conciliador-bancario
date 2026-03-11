@@ -3137,25 +3137,43 @@ async def import_converted_to_system(
 
 # Companies
 @api_router.post("/companies", response_model=Company)
-async def create_company(company: CompanyCreate):
-    company_obj = Company(**company.model_dump())
+async def create_company(company: CompanyCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    company_obj = Company(**company.model_dump(), tenant_id=tenant_id)
     doc = company_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['cnpj'] = clean_cnpj(doc['cnpj'])
     await db.companies.insert_one(doc)
+    
+    # Log de atividade
+    await log_activity(
+        usuario_id=current_user['id'],
+        usuario_nome=current_user['nome'],
+        acao="Cadastrou empresa",
+        detalhes=f"Empresa: {company.name}",
+        tenant_id=tenant_id,
+        tenant_nome=current_user.get('tenant', {}).get('nome')
+    )
+    
     return company_obj
 
 @api_router.get("/companies", response_model=List[Company])
-async def get_companies():
-    companies = await db.companies.find({}, {"_id": 0}).to_list(1000)
+async def get_companies(current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"tenant_id": tenant_id} if tenant_id else {}
+    companies = await db.companies.find(query, {"_id": 0}).to_list(1000)
     for c in companies:
         if isinstance(c.get('created_at'), str):
             c['created_at'] = datetime.fromisoformat(c['created_at'])
     return companies
 
 @api_router.get("/companies/{company_id}", response_model=Company)
-async def get_company(company_id: str):
-    company = await db.companies.find_one({"id": company_id}, {"_id": 0})
+async def get_company(company_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": company_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    company = await db.companies.find_one(query, {"_id": 0})
     if not company:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     if isinstance(company.get('created_at'), str):
@@ -3163,19 +3181,50 @@ async def get_company(company_id: str):
     return company
 
 @api_router.put("/companies/{company_id}", response_model=Company)
-async def update_company(company_id: str, company: CompanyCreate):
+async def update_company(company_id: str, company: CompanyCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": company_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    # Verificar se existe
+    existing = await db.companies.find_one(query, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
     update_data = company.model_dump()
     update_data['cnpj'] = clean_cnpj(update_data['cnpj'])
-    result = await db.companies.update_one({"id": company_id}, {"$set": update_data})
+    result = await db.companies.update_one(query, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
-    return await get_company(company_id)
+    return await get_company(company_id, current_user)
 
 @api_router.delete("/companies/{company_id}")
-async def delete_company(company_id: str):
-    result = await db.companies.delete_one({"id": company_id})
+async def delete_company(company_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": company_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    # Verificar se existe
+    company = await db.companies.find_one(query, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    result = await db.companies.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    # Log de atividade
+    await log_activity(
+        usuario_id=current_user['id'],
+        usuario_nome=current_user['nome'],
+        acao="Excluiu empresa",
+        detalhes=f"Empresa: {company.get('name')}",
+        tenant_id=tenant_id,
+        tenant_nome=current_user.get('tenant', {}).get('nome')
+    )
+    
     return {"message": "Empresa excluída com sucesso"}
 
 # Chart of Accounts
