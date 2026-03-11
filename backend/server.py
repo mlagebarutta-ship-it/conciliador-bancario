@@ -1275,10 +1275,30 @@ async def login(credentials: UserLogin):
     if user.get('status') != 'ativo':
         raise HTTPException(status_code=401, detail="Usuário inativo. Contate o administrador.")
     
-    token = create_token(user['id'], user['email'], user['perfil'])
+    # Verificar tenant (exceto para super_admin)
+    tenant_data = None
+    if user.get('perfil') != PERFIL_SUPER_ADMIN and user.get('tenant_id'):
+        tenant = await db.tenants.find_one({"id": user['tenant_id']}, {"_id": 0})
+        if not tenant:
+            raise HTTPException(status_code=401, detail="Escritório não encontrado")
+        if tenant.get('status') != 'ativo':
+            raise HTTPException(status_code=401, detail="Escritório bloqueado. Contate o suporte.")
+        tenant_data = {"id": tenant['id'], "nome": tenant['nome']}
+    
+    token = create_token(user['id'], user['email'], user['perfil'], user.get('tenant_id'))
     
     # Log de atividade
-    await log_activity(user['id'], user['nome'], "Login realizado")
+    await log_activity(
+        user['id'], user['nome'], "Login realizado",
+        tenant_id=user.get('tenant_id'),
+        tenant_nome=tenant_data['nome'] if tenant_data else None
+    )
+    
+    # Atualizar último acesso
+    await db.usuarios.update_one(
+        {"id": user['id']},
+        {"$set": {"ultimo_acesso": datetime.now(timezone.utc).isoformat()}}
+    )
     
     return {
         "token": token,
@@ -1286,7 +1306,9 @@ async def login(credentials: UserLogin):
             "id": user['id'],
             "nome": user['nome'],
             "email": user['email'],
-            "perfil": user['perfil']
+            "perfil": user['perfil'],
+            "tenant_id": user.get('tenant_id'),
+            "tenant": tenant_data
         }
     }
 
