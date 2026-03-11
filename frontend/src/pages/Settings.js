@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { Plus, Settings as SettingsIcon, Trash2, X, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 export default function Settings() {
   const [rules, setRules] = useState([]);
