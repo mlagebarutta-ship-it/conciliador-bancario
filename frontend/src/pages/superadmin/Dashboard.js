@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { toast } from 'sonner';
 import { 
   Building2, 
@@ -12,13 +12,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
-
 export default function SuperAdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +22,7 @@ export default function SuperAdminDashboard() {
 
   const loadDashboard = async () => {
     try {
-      const response = await axios.get(`${API}/superadmin/dashboard`, { headers: getAuthHeader() });
+      const response = await api.get(`/superadmin/dashboard`);
       setData(response.data);
     } catch (error) {
       toast.error('Erro ao carregar dashboard');
