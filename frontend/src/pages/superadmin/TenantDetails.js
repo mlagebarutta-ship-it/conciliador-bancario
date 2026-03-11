@@ -51,7 +51,7 @@ export default function TenantDetails() {
     e.preventDefault();
     
     try {
-      await axios.post(`${API}/superadmin/tenants/${tenantId}/admin`, adminForm, { headers: getAuthHeader() });
+      await api.post(`/superadmin/tenants/${tenantId}/admin`, adminForm);
       toast.success('Administrador criado com sucesso');
       setShowAdminModal(false);
       setAdminForm({ nome: '', email: '', senha: '' });
