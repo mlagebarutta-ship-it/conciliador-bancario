@@ -3229,16 +3229,22 @@ async def delete_company(company_id: str, current_user: Dict = Depends(require_a
 
 # Chart of Accounts
 @api_router.post("/chart-of-accounts", response_model=ChartOfAccounts)
-async def create_chart(chart: ChartOfAccountsCreate):
-    chart_obj = ChartOfAccounts(**chart.model_dump())
+async def create_chart(chart: ChartOfAccountsCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    chart_obj = ChartOfAccounts(**chart.model_dump(), tenant_id=tenant_id)
     doc = chart_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.chart_of_accounts.insert_one(doc)
     return chart_obj
 
 @api_router.get("/chart-of-accounts", response_model=List[ChartOfAccounts])
-async def get_charts(company_id: Optional[str] = None):
-    query = {"company_id": company_id} if company_id else {}
+async def get_charts(company_id: Optional[str] = None, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    if company_id:
+        query["company_id"] = company_id
     charts = await db.chart_of_accounts.find(query, {"_id": 0}).to_list(1000)
     for c in charts:
         if isinstance(c.get('created_at'), str):
@@ -3246,8 +3252,12 @@ async def get_charts(company_id: Optional[str] = None):
     return charts
 
 @api_router.delete("/chart-of-accounts/{chart_id}")
-async def delete_chart(chart_id: str):
-    result = await db.chart_of_accounts.delete_one({"id": chart_id})
+async def delete_chart(chart_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": chart_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.chart_of_accounts.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Plano de contas não encontrado")
     await db.account_items.delete_many({"chart_id": chart_id})
