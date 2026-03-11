@@ -22,7 +22,7 @@ export default function Companies() {
   
   const loadCompanies = async () => {
     try {
-      const response = await axios.get(`${API}/companies`);
+      const response = await api.get(`/companies`);
       setCompanies(response.data);
     } catch (error) {
       toast.error('Erro ao carregar empresas');
@@ -35,10 +35,10 @@ export default function Companies() {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`${API}/companies/${editingId}`, formData);
+        await api.put(`/companies/${editingId}`, formData);
         toast.success('Empresa atualizada com sucesso');
       } else {
-        await axios.post(`${API}/companies`, formData);
+        await api.post(`/companies`, formData);
         toast.success('Empresa cadastrada com sucesso');
       }
       setShowForm(false);
@@ -65,7 +65,7 @@ export default function Companies() {
   const handleDelete = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir esta empresa?')) return;
     try {
-      await axios.delete(`${API}/companies/${id}`);
+      await api.delete(`/companies/${id}`);
       toast.success('Empresa excluída com sucesso');
       loadCompanies();
     } catch (error) {

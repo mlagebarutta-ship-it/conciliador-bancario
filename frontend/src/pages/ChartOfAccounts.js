@@ -39,8 +39,8 @@ export default function ChartOfAccounts() {
   const loadData = async () => {
     try {
       const [companiesRes, chartsRes] = await Promise.all([
-        axios.get(`${API}/companies`),
-        axios.get(`${API}/chart-of-accounts`)
+        api.get(`/companies`),
+        api.get(`/chart-of-accounts`)
       ]);
       setCompanies(companiesRes.data);
       setCharts(chartsRes.data);
@@ -53,7 +53,7 @@ export default function ChartOfAccounts() {
   
   const loadAccounts = async (chartId) => {
     try {
-      const response = await axios.get(`${API}/account-items?chart_id=${chartId}`);
+      const response = await api.get(`/account-items?chart_id=${chartId}`);
       setAccounts(response.data);
     } catch (error) {
       toast.error('Erro ao carregar contas');
@@ -63,7 +63,7 @@ export default function ChartOfAccounts() {
   const handleCreateChart = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/chart-of-accounts`, chartFormData);
+      await api.post(`/chart-of-accounts`, chartFormData);
       toast.success('Plano de contas criado com sucesso');
       setShowChartForm(false);
       setChartFormData({ company_id: '', name: '', description: '' });
@@ -76,7 +76,7 @@ export default function ChartOfAccounts() {
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/account-items`, accountFormData);
+      await api.post(`/account-items`, accountFormData);
       toast.success('Conta adicionada com sucesso');
       setShowAccountForm(false);
       setAccountFormData({ chart_id: '', code: '', description: '', account_type: '' });
@@ -89,7 +89,7 @@ export default function ChartOfAccounts() {
   const handleDeleteChart = async (chartId) => {
     if (!window.confirm('Tem certeza? Isso excluirá todas as contas associadas.')) return;
     try {
-      await axios.delete(`${API}/chart-of-accounts/${chartId}`);
+      await api.delete(`/chart-of-accounts/${chartId}`);
       toast.success('Plano de contas excluído');
       if (selectedChart?.id === chartId) setSelectedChart(null);
       loadData();
@@ -101,7 +101,7 @@ export default function ChartOfAccounts() {
   const handleDeleteAccount = async (accountId) => {
     if (!window.confirm('Tem certeza que deseja excluir esta conta?')) return;
     try {
-      await axios.delete(`${API}/account-items/${accountId}`);
+      await api.delete(`/account-items/${accountId}`);
       toast.success('Conta excluída com sucesso');
       loadAccounts(selectedChart.id);
     } catch (error) {
