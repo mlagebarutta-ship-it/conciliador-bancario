@@ -128,6 +128,7 @@ class UserEmpresa(BaseModel):
     """Vínculo entre usuário e empresa"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
     usuario_id: str
     empresa_id: str
 
@@ -135,6 +136,8 @@ class ActivityLog(BaseModel):
     """Log de atividades do sistema"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # None para ações do super_admin
+    tenant_nome: Optional[str] = None
     usuario_id: str
     usuario_nome: str
     acao: str
@@ -153,12 +156,13 @@ def verify_password(password: str, hashed: str) -> bool:
     """Verifica se a senha está correta"""
     return hash_password(password) == hashed
 
-def create_token(user_id: str, email: str, perfil: str) -> str:
+def create_token(user_id: str, email: str, perfil: str, tenant_id: str = None) -> str:
     """Cria token JWT"""
     payload = {
         "user_id": user_id,
         "email": email,
         "perfil": perfil,
+        "tenant_id": tenant_id,
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -188,6 +192,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not user or user.get("status") != "ativo":
         return None
     
+    # Verificar status do tenant (exceto para super_admin)
+    if user.get("perfil") != PERFIL_SUPER_ADMIN and user.get("tenant_id"):
+        tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+        if not tenant or tenant.get("status") != "ativo":
+            return None
+        user["tenant"] = tenant
+    
     return user
 
 async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
@@ -198,15 +209,32 @@ async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(secur
     return user
 
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
-    """Exige perfil de administrador"""
+    """Exige perfil de administrador do tenant"""
     user = await require_auth(credentials)
-    if user.get("perfil") != "administrador":
+    if user.get("perfil") not in [PERFIL_ADMIN_TENANT, PERFIL_SUPER_ADMIN]:
         raise HTTPException(status_code=403, detail="Acesso negado. Requer perfil de administrador.")
     return user
 
-async def log_activity(usuario_id: str, usuario_nome: str, acao: str, detalhes: str = None, empresa_id: str = None, empresa_nome: str = None):
+async def require_super_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
+    """Exige perfil de super admin"""
+    user = await require_auth(credentials)
+    if user.get("perfil") != PERFIL_SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Acesso negado. Requer perfil de Super Admin.")
+    return user
+
+def get_tenant_id(user: Dict) -> Optional[str]:
+    """Obtém o tenant_id do usuário atual"""
+    if user.get("perfil") == PERFIL_SUPER_ADMIN:
+        return None  # Super admin não tem tenant
+    return user.get("tenant_id")
+
+async def log_activity(usuario_id: str, usuario_nome: str, acao: str, detalhes: str = None, 
+                       empresa_id: str = None, empresa_nome: str = None, 
+                       tenant_id: str = None, tenant_nome: str = None):
     """Registra atividade no log"""
     log = ActivityLog(
+        tenant_id=tenant_id,
+        tenant_nome=tenant_nome,
         usuario_id=usuario_id,
         usuario_nome=usuario_nome,
         acao=acao,
