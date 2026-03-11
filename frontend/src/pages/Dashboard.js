@@ -26,10 +26,7 @@ export default function Dashboard() {
   
   const loadData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await api.get(`/dashboard/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/dashboard/stats`);
       setStats(response.data);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
