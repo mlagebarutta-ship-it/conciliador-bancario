@@ -3832,9 +3832,14 @@ async def update_transaction(transaction_id: str, update: TransactionUpdate, cur
     return trans
 
 @api_router.get("/bank-statements/{statement_id}/export")
-async def export_statement(statement_id: str):
-    # Buscar statement e transações
-    statement = await db.bank_statements.find_one({"id": statement_id}, {"_id": 0})
+async def export_statement(statement_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    
+    # Buscar statement e verificar tenant
+    query = {"id": statement_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    statement = await db.bank_statements.find_one(query, {"_id": 0})
     if not statement:
         raise HTTPException(status_code=404, detail="Extrato não encontrado")
     
@@ -3889,11 +3894,33 @@ async def export_statement(statement_id: str):
     return FileResponse(filepath, filename=filename, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 @api_router.delete("/bank-statements/{statement_id}")
-async def delete_statement(statement_id: str):
-    result = await db.bank_statements.delete_one({"id": statement_id})
+async def delete_statement(statement_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": statement_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    # Verificar se o statement existe e pertence ao tenant
+    statement = await db.bank_statements.find_one(query, {"_id": 0})
+    if not statement:
+        raise HTTPException(status_code=404, detail="Extrato não encontrado")
+    
+    result = await db.bank_statements.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Extrato não encontrado")
     await db.transactions.delete_many({"statement_id": statement_id})
+    
+    # Log de atividade
+    await log_activity(
+        usuario_id=current_user['id'],
+        usuario_nome=current_user['nome'],
+        acao="Excluiu extrato",
+        detalhes=f"Período: {statement.get('period')}",
+        empresa_id=statement.get('company_id'),
+        tenant_id=tenant_id,
+        tenant_nome=current_user.get('tenant', {}).get('nome')
+    )
+    
     return {"message": "Extrato excluído com sucesso"}
 
 app.include_router(api_router)
