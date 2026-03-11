@@ -3679,8 +3679,10 @@ class BulkUpdateRequest(BaseModel):
     update_data: dict
 
 @api_router.put("/transactions/bulk-update")
-async def bulk_update_transactions(request: BulkUpdateRequest):
+async def bulk_update_transactions(request: BulkUpdateRequest, current_user: Dict = Depends(require_auth)):
     """Atualiza múltiplas transações de uma vez"""
+    tenant_id = get_tenant_id(current_user)
+    
     if not request.transaction_ids:
         raise HTTPException(status_code=400, detail="Nenhuma transação selecionada")
     
@@ -3752,6 +3754,7 @@ async def bulk_update_transactions(request: BulkUpdateRequest):
                 )
             else:
                 history_entry = ClassificationHistory(
+                    tenant_id=tenant_id,
                     company_id=company_id,
                     description_pattern=description,
                     transaction_type=trans.get('transaction_type', 'D'),
@@ -3771,7 +3774,8 @@ async def bulk_update_transactions(request: BulkUpdateRequest):
     }
 
 @api_router.put("/transactions/{transaction_id}", response_model=Transaction)
-async def update_transaction(transaction_id: str, update: TransactionUpdate):
+async def update_transaction(transaction_id: str, update: TransactionUpdate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
     update_data = {k: v for k, v in update.model_dump().items() if v is not None}
     result = await db.transactions.update_one({"id": transaction_id}, {"$set": update_data})
     if result.matched_count == 0:
@@ -3812,6 +3816,7 @@ async def update_transaction(transaction_id: str, update: TransactionUpdate):
             else:
                 # Criar novo registro no histórico
                 history_entry = ClassificationHistory(
+                    tenant_id=tenant_id,
                     company_id=company_id,
                     description_pattern=description,
                     transaction_type=trans_type,
