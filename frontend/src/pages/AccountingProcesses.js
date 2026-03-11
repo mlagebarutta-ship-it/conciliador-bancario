@@ -89,11 +89,11 @@ export default function AccountingProcesses() {
   const loadData = async () => {
     try {
       const [processesRes, groupedRes, companiesRes, statsRes, responsiblesRes] = await Promise.all([
-        axios.get(`${API}/accounting-processes?is_archived=${showArchived}`),
-        axios.get(`${API}/accounting-processes/grouped?is_archived=${showArchived}`),
-        axios.get(`${API}/companies`),
-        axios.get(`${API}/accounting-processes/stats`),
-        axios.get(`${API}/accounting-processes/responsibles/list`)
+        api.get(`/accounting-processes?is_archived=${showArchived}`),
+        api.get(`/accounting-processes/grouped?is_archived=${showArchived}`),
+        api.get(`/companies`),
+        api.get(`/accounting-processes/stats`),
+        api.get(`/accounting-processes/responsibles/list`)
       ]);
       
       setProcesses(processesRes.data);
@@ -116,7 +116,7 @@ export default function AccountingProcesses() {
     }
     
     try {
-      await axios.post(`${API}/accounting-processes`, newProcess);
+      await api.post(`/accounting-processes`, newProcess);
       toast.success('Processamento criado com sucesso');
       setShowNewModal(false);
       setNewProcess({
@@ -138,7 +138,7 @@ export default function AccountingProcesses() {
     }
     
     try {
-      const response = await axios.post(`${API}/accounting-processes/bulk-create`, null, {
+      const response = await api.post(`/accounting-processes/bulk-create`, null, {
         params: bulkCreate
       });
       toast.success(`${response.data.count} processamentos criados`);
@@ -153,7 +153,7 @@ export default function AccountingProcesses() {
     if (!editingProcess) return;
     
     try {
-      await axios.put(`${API}/accounting-processes/${editingProcess.id}`, {
+      await api.put(`/accounting-processes/${editingProcess.id}`, {
         status: editingProcess.status,
         responsible: editingProcess.responsible,
         observations: editingProcess.observations
@@ -169,7 +169,7 @@ export default function AccountingProcesses() {
   
   const handleArchiveProcess = async (processId) => {
     try {
-      await axios.post(`${API}/accounting-processes/${processId}/archive`);
+      await api.post(`/accounting-processes/${processId}/archive`);
       toast.success('Processamento arquivado');
       loadData();
     } catch (error) {
@@ -181,7 +181,7 @@ export default function AccountingProcesses() {
     if (!window.confirm('Tem certeza que deseja excluir este processamento?')) return;
     
     try {
-      await axios.delete(`${API}/accounting-processes/${processId}`);
+      await api.delete(`/accounting-processes/${processId}`);
       toast.success('Processamento excluído');
       loadData();
     } catch (error) {
@@ -191,7 +191,7 @@ export default function AccountingProcesses() {
   
   const handleArchiveOld = async () => {
     try {
-      const response = await axios.post(`${API}/accounting-processes/archive-old?months_old=12`);
+      const response = await api.post(`/accounting-processes/archive-old?months_old=12`);
       toast.success(`${response.data.archived_count} processamentos arquivados`);
       loadData();
     } catch (error) {
