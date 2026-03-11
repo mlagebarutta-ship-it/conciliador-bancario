@@ -3266,14 +3266,20 @@ async def delete_chart(chart_id: str, current_user: Dict = Depends(require_auth)
 @api_router.post("/chart-of-accounts/{chart_id}/import")
 async def import_chart_accounts(
     chart_id: str,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: Dict = Depends(require_auth)
 ):
     """Importar plano de contas em massa via Excel
     Formato esperado: Código | Descrição | Classificação | Tipo
     """
     try:
-        # Verificar se o plano existe
-        chart = await db.chart_of_accounts.find_one({"id": chart_id}, {"_id": 0})
+        tenant_id = get_tenant_id(current_user)
+        
+        # Verificar se o plano existe e pertence ao tenant
+        query = {"id": chart_id}
+        if tenant_id:
+            query["tenant_id"] = tenant_id
+        chart = await db.chart_of_accounts.find_one(query, {"_id": 0})
         if not chart:
             raise HTTPException(status_code=404, detail="Plano de contas não encontrado")
         
