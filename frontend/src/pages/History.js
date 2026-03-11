@@ -29,8 +29,8 @@ export default function History() {
   const loadData = async () => {
     try {
       const [statementsRes, companiesRes] = await Promise.all([
-        axios.get(`${API}/bank-statements`),
-        axios.get(`${API}/companies`)
+        api.get(`/bank-statements`),
+        api.get(`/companies`)
       ]);
       setStatements(statementsRes.data);
       setCompanies(companiesRes.data);
@@ -122,7 +122,7 @@ export default function History() {
   const handleExport = async (statementId, e) => {
     e.stopPropagation();
     try {
-      const response = await axios.get(`${API}/bank-statements/${statementId}/export`, {
+      const response = await api.get(`/bank-statements/${statementId}/export`, {
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -142,7 +142,7 @@ export default function History() {
     e.stopPropagation();
     if (!window.confirm('Tem certeza que deseja excluir este processamento?')) return;
     try {
-      await axios.delete(`${API}/bank-statements/${statementId}`);
+      await api.delete(`/bank-statements/${statementId}`);
       toast.success('Processamento excluído');
       loadData();
     } catch (error) {
