@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../utils/api';
 import { 
   Building2, 
@@ -82,11 +82,7 @@ export default function AccountingProcesses() {
     responsible: ''
   });
   
-  useEffect(() => {
-    loadData();
-  }, [showArchived]);
-  
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [processesRes, groupedRes, companiesRes, statsRes, responsiblesRes] = await Promise.all([
         api.get(`/accounting-processes?is_archived=${showArchived}`),
@@ -107,7 +103,11 @@ export default function AccountingProcesses() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showArchived]);
+  
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
   
   const handleCreateProcess = async () => {
     if (!newProcess.company_id) {
