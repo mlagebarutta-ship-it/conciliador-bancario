@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { toast } from 'sonner';
 import { 
   Users, 
@@ -11,13 +11,6 @@ import {
   Ban,
   Check
 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
 
 export default function GlobalUserManagement() {
   const [users, setUsers] = useState([]);
@@ -36,8 +29,8 @@ export default function GlobalUserManagement() {
   const loadData = async () => {
     try {
       const [usersRes, tenantsRes] = await Promise.all([
-        axios.get(`${API}/superadmin/usuarios`, { headers: getAuthHeader() }),
-        axios.get(`${API}/superadmin/tenants`, { headers: getAuthHeader() })
+        api.get(`/superadmin/usuarios`),
+        api.get(`/superadmin/tenants`)
       ]);
       setUsers(usersRes.data);
       setTenants(tenantsRes.data);
