@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -16,13 +16,6 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return { Authorization: `Bearer ${token}` };
-};
 
 export default function TenantDetails() {
   const { tenantId } = useParams();
@@ -44,7 +37,7 @@ export default function TenantDetails() {
 
   const loadTenant = async () => {
     try {
-      const response = await axios.get(`${API}/superadmin/tenants/${tenantId}`, { headers: getAuthHeader() });
+      const response = await api.get(`/superadmin/tenants/${tenantId}`);
       setTenant(response.data);
     } catch (error) {
       toast.error('Erro ao carregar escritório');
