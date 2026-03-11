@@ -37,7 +37,7 @@ export default function NewProcessing() {
   
   const loadCompanies = async () => {
     try {
-      const response = await axios.get(`${API}/companies`);
+      const response = await api.get(`/companies`);
       setCompanies(response.data);
     } catch (error) {
       toast.error('Erro ao carregar empresas');
@@ -46,7 +46,7 @@ export default function NewProcessing() {
   
   const loadCharts = async (companyId) => {
     try {
-      const response = await axios.get(`${API}/chart-of-accounts?company_id=${companyId}`);
+      const response = await api.get(`/chart-of-accounts?company_id=${companyId}`);
       setCharts(response.data);
     } catch (error) {
       toast.error('Erro ao carregar planos de contas');
@@ -102,7 +102,7 @@ export default function NewProcessing() {
   
   const handleUpdateTransaction = async (transId) => {
     try {
-      await axios.put(`${API}/transactions/${transId}`, editData);
+      await api.put(`/transactions/${transId}`, editData);
       setTransactions(transactions.map(t => t.id === transId ? { ...t, ...editData } : t));
       setEditingId(null);
       setEditData({});
@@ -114,7 +114,7 @@ export default function NewProcessing() {
   
   const handleExport = async () => {
     try {
-      const response = await axios.get(`${API}/bank-statements/${result.id}/export`, {
+      const response = await api.get(`/bank-statements/${result.id}/export`, {
         responseType: 'blob'
       });
       
