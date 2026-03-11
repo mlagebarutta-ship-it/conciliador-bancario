@@ -13,15 +13,28 @@ import Settings from './pages/Settings';
 import AccountingProcesses from './pages/AccountingProcesses';
 import UserManagement from './pages/UserManagement';
 import ActivityLogs from './pages/ActivityLogs';
+
+// Super Admin Pages
+import SuperAdminDashboard from './pages/superadmin/Dashboard';
+import TenantManagement from './pages/superadmin/TenantManagement';
+import TenantDetails from './pages/superadmin/TenantDetails';
+import GlobalUserManagement from './pages/superadmin/GlobalUserManagement';
+
 import './App.css';
 
 // Componente para proteger rotas
-const ProtectedRoute = ({ children, user, requiredRole }) => {
+const ProtectedRoute = ({ children, user, requiredRoles }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole && user.perfil !== requiredRole) {
+  // Se requiredRoles é um array, verifica se o perfil do usuário está nele
+  if (requiredRoles && Array.isArray(requiredRoles)) {
+    if (!requiredRoles.includes(user.perfil)) {
+      return <Navigate to="/" replace />;
+    }
+  } else if (requiredRoles && user.perfil !== requiredRoles) {
+    // Compatibilidade com string única
     return <Navigate to="/" replace />;
   }
   
@@ -67,6 +80,10 @@ function App() {
     );
   }
 
+  const isSuperAdmin = user?.perfil === 'super_admin';
+  const isAdminTenant = user?.perfil === 'admin_tenant';
+  const isAdmin = isSuperAdmin || isAdminTenant || user?.perfil === 'administrador';
+
   return (
     <div className="App">
       <Toaster
@@ -90,19 +107,62 @@ function App() {
           // Rotas protegidas - Sistema
           <SidebarLayout user={user} onLogout={handleLogout}>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/empresas" element={<Companies user={user} />} />
-              <Route path="/plano-contas" element={<ChartOfAccounts user={user} />} />
-              <Route path="/novo-processamento" element={<NewProcessing user={user} />} />
-              <Route path="/historico" element={<History user={user} />} />
-              <Route path="/historico/:id" element={<StatementDetails user={user} />} />
-              <Route path="/processamentos" element={<AccountingProcesses user={user} />} />
+              {/* Rota inicial baseada no perfil */}
+              <Route path="/" element={
+                isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />
+              } />
               
-              {/* Rotas apenas para Administrador */}
+              {/* Rotas do Super Admin */}
+              <Route 
+                path="/superadmin/dashboard" 
+                element={
+                  <ProtectedRoute user={user} requiredRoles={['super_admin']}>
+                    <SuperAdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/superadmin/escritorios" 
+                element={
+                  <ProtectedRoute user={user} requiredRoles={['super_admin']}>
+                    <TenantManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/superadmin/escritorios/:tenantId" 
+                element={
+                  <ProtectedRoute user={user} requiredRoles={['super_admin']}>
+                    <TenantDetails />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/superadmin/usuarios" 
+                element={
+                  <ProtectedRoute user={user} requiredRoles={['super_admin']}>
+                    <GlobalUserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Rotas operacionais (apenas para admins de escritório e colaboradores) */}
+              {!isSuperAdmin && (
+                <>
+                  <Route path="/empresas" element={<Companies user={user} />} />
+                  <Route path="/plano-contas" element={<ChartOfAccounts user={user} />} />
+                  <Route path="/novo-processamento" element={<NewProcessing user={user} />} />
+                  <Route path="/historico" element={<History user={user} />} />
+                  <Route path="/historico/:id" element={<StatementDetails user={user} />} />
+                  <Route path="/processamentos" element={<AccountingProcesses user={user} />} />
+                </>
+              )}
+              
+              {/* Rotas apenas para Administrador do Escritório */}
               <Route 
                 path="/usuarios" 
                 element={
-                  <ProtectedRoute user={user} requiredRole="administrador">
+                  <ProtectedRoute user={user} requiredRoles={['admin_tenant', 'administrador']}>
                     <UserManagement />
                   </ProtectedRoute>
                 } 
@@ -110,7 +170,7 @@ function App() {
               <Route 
                 path="/logs" 
                 element={
-                  <ProtectedRoute user={user} requiredRole="administrador">
+                  <ProtectedRoute user={user} requiredRoles={['admin_tenant', 'administrador']}>
                     <ActivityLogs />
                   </ProtectedRoute>
                 } 
@@ -118,7 +178,7 @@ function App() {
               <Route 
                 path="/configuracoes" 
                 element={
-                  <ProtectedRoute user={user} requiredRole="administrador">
+                  <ProtectedRoute user={user} requiredRoles={['admin_tenant', 'administrador']}>
                     <Settings />
                   </ProtectedRoute>
                 } 
