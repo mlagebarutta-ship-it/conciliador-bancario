@@ -2192,11 +2192,15 @@ async def get_accounting_processes(
     month: Optional[int] = None,
     status: Optional[str] = None,
     responsible: Optional[str] = None,
-    is_archived: Optional[bool] = False
+    is_archived: Optional[bool] = False,
+    current_user: Dict = Depends(require_auth)
 ):
     """Lista processamentos contábeis com filtros"""
+    tenant_id = get_tenant_id(current_user)
     query = {}
     
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     if company_id:
         query["company_id"] = company_id
     if year:
@@ -2230,10 +2234,14 @@ async def get_accounting_processes(
 @api_router.get("/accounting-processes/grouped")
 async def get_accounting_processes_grouped(
     company_id: Optional[str] = None,
-    is_archived: bool = False
+    is_archived: bool = False,
+    current_user: Dict = Depends(require_auth)
 ):
     """Retorna processamentos agrupados por empresa > ano > mês"""
+    tenant_id = get_tenant_id(current_user)
     query = {"is_archived": is_archived}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     if company_id:
         query["company_id"] = company_id
     
@@ -2265,9 +2273,13 @@ async def get_accounting_processes_grouped(
     return grouped
 
 @api_router.get("/accounting-processes/stats")
-async def get_accounting_processes_stats():
+async def get_accounting_processes_stats(current_user: Dict = Depends(require_auth)):
     """Retorna estatísticas dos processamentos"""
-    all_processes = await db.accounting_processes.find({"is_archived": False}, {"_id": 0}).to_list(10000)
+    tenant_id = get_tenant_id(current_user)
+    query = {"is_archived": False}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    all_processes = await db.accounting_processes.find(query, {"_id": 0}).to_list(10000)
     
     stats = {
         'total': len(all_processes),
@@ -2306,24 +2318,33 @@ async def get_accounting_processes_stats():
     return stats
 
 @api_router.post("/accounting-processes")
-async def create_accounting_process(process: AccountingProcessCreate):
+async def create_accounting_process(process: AccountingProcessCreate, current_user: Dict = Depends(require_auth)):
     """Cria um novo processamento contábil"""
-    # Buscar nome da empresa
-    company = await db.companies.find_one({"id": process.company_id}, {"_id": 0})
+    tenant_id = get_tenant_id(current_user)
+    
+    # Buscar nome da empresa (verificando tenant)
+    company_query = {"id": process.company_id}
+    if tenant_id:
+        company_query["tenant_id"] = tenant_id
+    company = await db.companies.find_one(company_query, {"_id": 0})
     if not company:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     
     # Verificar se já existe processamento para este período
-    existing = await db.accounting_processes.find_one({
+    existing_query = {
         "company_id": process.company_id,
         "year": process.year,
         "month": process.month,
         "is_archived": False
-    })
+    }
+    if tenant_id:
+        existing_query["tenant_id"] = tenant_id
+    existing = await db.accounting_processes.find_one(existing_query)
     if existing:
         raise HTTPException(status_code=400, detail="Já existe um processamento para este período")
     
     process_obj = AccountingProcess(
+        tenant_id=tenant_id,
         company_id=process.company_id,
         company_name=company['name'],
         year=process.year,
