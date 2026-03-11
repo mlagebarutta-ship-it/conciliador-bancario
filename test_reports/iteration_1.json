@@ -32,7 +32,7 @@
   "test_credentials": {
     "company_id": "5bd7e8c3-1caa-43e1-a4c0-25b5d50ce076",
     "chart_id": "adcdfc85-1083-40c0-8f79-91f935e815f1",
-    "api_url": "https://contador-smart.preview.emergentagent.com/api"
+    "api_url": "https://saas-contadores.preview.emergentagent.com/api"
   },
   "seed_data_creation": "Test data created during backend tests was cleaned up after each test",
   "retest_needed": false,

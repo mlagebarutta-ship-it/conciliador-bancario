@@ -1,86 +1,74 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou a criação de um sistema web para contadores brasileiros que usam o software Domínio (Thomson Reuters). A principal função do sistema é processar extratos bancários (em formatos OFX, Excel, PDF ou CSV) e convertê-los em um arquivo Excel (.xlsx) estruturado, pronto para importação no sistema Domínio.
-
-**PRODUCT REQUIREMENTS:**
-1.  **Processamento de Arquivos:** Fazer upload de extratos bancários, limpar e estruturar os dados.
-2.  **Normalização:** Padronizar os dados em colunas fixas: Data, Histórico, Valor e Tipo (C/D).
-3.  **Classificação Contábil:** Aplicar regras automáticas e aprender com as classificações manuais do usuário (Memória Inteligente). Permitir a criação de um plano de contas dinâmico.
-4.  **Gestão de Entidades:** Gerenciar Empresas, Planos de Contas e Regras de Classificação.
-5.  **Exportação:** Gerar um arquivo XLSX final no formato e ordem de colunas exigidos pelo sistema Domínio.
-6.  **Interface e Usabilidade:** Permitir edição manual e em massa dos lançamentos, manter um histórico de processamentos e transformar o dashboard em um painel de controle operacional.
-7.  **Conversor de Arquivos:** Criar um módulo para converter arquivos (PDF, XLSX, CSV) para o formato OFX de maneira interativa.
+O usuário solicitou inicialmente um sistema web para contadores (Domínio Bridge) para processar extratos bancários e prepará-los para importação. O escopo evoluiu significativamente para incluir:
+1.  **Sistema de Usuários:** Uma primeira camada de gestão com perfis Administrador e Colaborador.
+2.  **Landing Page:** Uma página de apresentação profissional com formulário de login.
+3.  **Arquitetura Multi-tenant (SaaS):** A solicitação mais recente e de maior prioridade. O objetivo é transformar a aplicação em uma plataforma SaaS (Software as a Service) que possa ser vendida para múltiplos escritórios de contabilidade.
+    -   **Níveis de Acesso:**
+        -   **SUPER ADMIN:** O dono da plataforma, com um painel () para gerenciar todos os escritórios (tenants), visualizar estatísticas globais e logs.
+        -   **ADMIN DO ESCRITÓRIO:** Gerencia usuários, empresas e configurações dentro do seu próprio escritório.
+        -   **COLABORADOR:** Apenas opera o sistema (importa extratos, classifica transações) nas empresas que lhe foram atribuídas.
+    -   **Isolamento de Dados:** Cada escritório (tenant) deve ter seus dados (empresas, usuários, extratos, etc.) completamente isolados dos outros.
 
 **User's preferred language**: Portuguese (Brazil). The next agent MUST respond in Portuguese.
 
 **what currently exists?**
-É uma aplicação full-stack (React + FastAPI) funcional. As funcionalidades implementadas incluem:
--   **Dashboard Operacional:** Visão geral do status das empresas (em dia, atrasadas), pendências de trabalho e classificações.
--   **Gestão de Entidades:** CRUD completo para Empresas, Planos de Contas e Regras.
--   **Classificação Inteligente:** O sistema aprende com as classificações manuais do usuário e as aplica automaticamente em extratos futuros da mesma empresa.
--   **Processamento de Arquivos:** O sistema possui parsers para OFX, XLSX, CSV e PDF, que foram aprimorados para lidar com vários formatos de extratos, incluindo o do banco Santander.
--   **Edição em Massa:** A tela de detalhes de um processamento permite selecionar múltiplos lançamentos e editar suas contas de débito/crédito de uma só vez.
--   **Histórico de Processamentos:** Um sistema hierárquico (Empresa > Ano > Mês) para organizar, filtrar e gerenciar o status de cada competência contábil.
--   **Conversor para OFX (Estrutura):** A estrutura inicial para um módulo conversor de arquivos (XLSX/PDF/CSV para OFX) foi criada, incluindo os endpoints de backend e a página no frontend.
+É uma aplicação full-stack (React + FastAPI + MongoDB) que evoluiu para uma arquitetura multi-tenant.
+-   **Backend:** O arquivo  foi extensivamente modificado para suportar a nova estrutura. Foram criados modelos de dados para , e os modelos existentes (como ) foram atualizados para incluir um . Endpoints de autenticação via JWT e de gestão de usuários (CRUD) foram implementados, assim como novos endpoints exclusivos para o  (). Um script de migração foi executado para mover todos os dados preexistentes para um Escritório Padrão e um usuário  foi criado.
+-   **Frontend:**
+    -   Foi criada uma  que serve como ponto de entrada e login.
+    -   O  foi reestruturado para gerenciar rotas públicas, rotas protegidas por login e rotas exclusivas para cada perfil de usuário.
+    -   O  é dinâmico, exibindo diferentes itens de menu com base no perfil do usuário logado (, , ).
+    -   Existem páginas para  e  (para o nível de admin de escritório).
+    -   A estrutura de arquivos para o painel do **Super Admin** foi criada (), mas as páginas ainda são esqueletos vazios.
 
 **Last working item**:
--   Last item agent was working: O agente estava iniciando a implementação de um novo módulo: **Conversor de Extratos para OFX**. Isso foi uma solicitação do usuário para criar uma solução mais robusta e flexível para a importação de arquivos não padronizados (PDF, XLSX, CSV). O agente criou os endpoints da API no backend ( e ) e a estrutura da página no frontend (), incluindo a rota e o link no menu.
+-   Last item agent was working: O agente estava no meio da implementação da **arquitetura multi-tenant**. Após concluir a refatoração do backend (modelos, endpoints do super admin, migração de dados), ele criou a estrutura de arquivos para as páginas do frontend do painel do Super Admin.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
 -   Which testing method agent to use? both
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: (P1) O sistema não consegue processar arquivos de Excel no formato binário antigo (BIFF5, ex: Excel 5.0/95).
-
-Issues Detail:
--   **Issue 1: Falha ao ler arquivos .xls antigos**
-    -   **Attempted fixes:** Tentativas com as bibliotecas ,  e  falharam, indicando um formato binário incompatível. O problema foi contornado quando o usuário enviou um novo arquivo, mas a causa raiz não foi resolvida.
-    -   **Next debug checklist:**
-        1.  Pesquisar por bibliotecas Python capazes de ler formatos antigos de Excel (BIFF5).
-        2.  Considerar o uso de uma ferramenta de linha de comando (ex:  do Gnumeric) para converter o arquivo para um formato moderno (CSV ou XLSX) antes de processá-lo no Python. A implementação do novo Conversor OFX pode ser uma oportunidade para integrar essa solução.
-    -   **Why fix this issue and what will be achieved with the fix?** Aumenta a robustez da aplicação, permitindo que ela lide com arquivos legados que ainda são comuns em ambientes de contabilidade.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** backend
-    -   **Blocked on other issue:** None
+-   Nenhum bug conhecido. O foco principal é a conclusão da tarefa em andamento.
 
 **In progress Task List**:
--   Task 1: (P0) Concluir a implementação do módulo Conversor de Extratos para OFX.
+-   Task 1: (P0) Concluir a implementação do sistema Multi-Tenant com Super Admin.
 
 Task Detail:
--   **Task 1: Concluir o módulo Conversor de Extratos para OFX**
+-   **Task 1: Concluir o sistema Multi-Tenant**
     -   **Where to resume:**
-        1.  : Implementar a UI para upload de arquivo, a tela de preview que mostra os dados extraídos e a interface para o usuário mapear as colunas (Data, Descrição, Valor, etc.).
-        2.  : Implementar a lógica nos endpoints  (para usar os parsers existentes e retornar os dados brutos) e  (para gerar o arquivo OFX com base nos dados e no mapeamento do usuário).
-    -   **What will be achieved with this?** Criará uma solução definitiva e flexível para importar qualquer tipo de extrato em formato de tabela (XLSX, CSV, PDF), permitindo que o usuário guie o processo de extração de dados.
+        1.  **Frontend (Super Admin):** Implementar a UI e a lógica nas páginas recém-criadas:
+            -   : Conectar ao endpoint  para exibir as métricas globais da plataforma.
+            -   : Implementar CRUD para gerenciar os escritórios (tenants) usando os endpoints .
+            -   : Exibir detalhes de um escritório específico, incluindo seus usuários e empresas.
+        2.  **Frontend (Roteamento e Layout):** Atualizar  e  para integrar as novas rotas e o menu do Super Admin, garantindo que sejam acessíveis apenas por esse perfil.
+        3.  **Backend (Isolamento de Dados - CRÍTICO):** O agente atualizou as rotas de usuários () para filtrar por . Agora, é **essencial** revisar e atualizar **TODAS as outras rotas** que lidam com dados (ex: , , , etc.) para garantir que elas filtrem os resultados com base no  presente no token JWT do usuário autenticado. **A falha em fazer isso resultará em vazamento de dados entre os escritórios.**
+    -   **What will be achieved with this?** A transformação completa do sistema em uma aplicação SaaS funcional, segura e pronta para ser comercializada para múltiplos clientes (escritórios de contabilidade).
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** both
     -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **(P1) Implementar Plano de Contas Dinâmico:** Permitir que novas contas contábeis sejam criadas on-the-fly durante a etapa de classificação do extrato, sem a necessidade de cadastrá-las previamente no Plano de Contas.
-    -   **(P2) Adicionar Validação de Contas:** Garantir que, durante a edição manual ou classificação, o sistema valide se a conta de débito/crédito inserida existe no plano de contas da empresa.
+    -   **(P1) Atribuição de Empresas a Colaboradores:** Implementar a lógica para que um  possa atribuir empresas específicas a um , e o colaborador visualize apenas os dados dessas empresas.
+    -   **(P2) Plano de Contas Dinâmico:** Permitir que contas contábeis sejam criadas durante o processo de classificação, sem pré-cadastro.
 -   **Future Tasks:**
-    -   **(P2) Refatorar :** O arquivo cresceu consideravelmente e concentra toda a lógica. Refatorá-lo em uma estrutura de ,  e  melhoraria a manutenção e a escalabilidade.
-    -   **(P2) Vincular Módulo de Processamento com Extratos:** Conectar o upload de um extrato ao seu respectivo Processamento Contábil do período, atualizando o status automaticamente (ex: de Não iniciado para Em processamento).
+    -   **(P2) Refatoração do :** O arquivo está extremamente grande (>3.700 linhas) e precisa urgentemente ser dividido em uma estrutura de ,  e  para garantir a manutenibilidade.
+    -   **(P3) Sistema de Planos e Pagamentos:** Integrar um sistema (como Stripe) para gerenciar assinaturas e pagamentos dos escritórios que usam a plataforma.
+    -   **(P3) Integração com Open Finance:** Explorar a integração com APIs como Pluggy ou Belvo, conforme discutido com o usuário.
+    -   **(P3) Reativar Conversor OFX:** O módulo foi ocultado a pedido do usuário, mas o código existe e pode ser reativado como um recurso da plataforma.
 
 **Completed work in this session**
--   List of all completed tasks with file and method name:
-    -   **Sistema de Classificação Inteligente (DONE):** Implementado o aprendizado a partir das classificações manuais do usuário. A lógica foi adicionada em  no endpoint  para salvar o aprendizado e na função  para aplicá-lo.
-    -   **Correção Robusta dos Parsers (DONE):** Os parsers de XLSX, CSV e PDF em  foram reescritos para suportar múltiplos layouts, incluindo colunas de débito/crédito separadas e o formato de número com sinal negativo no final (ex: 415,84-), corrigindo a importação de extratos do Santander.
-    -   **Edição em Massa de Lançamentos (DONE):** Implementado na página  com um novo endpoint  no backend.
-    -   **Dashboard Operacional (DONE):** O  foi totalmente reformulado para exibir métricas operacionais (status de empresas, pendências) com dados do novo endpoint .
-    -   **Sistema de Processamentos Contábeis (DONE):** Criado um novo módulo com a página  e endpoints CRUD em  para gerenciar o histórico de forma organizada e hierárquica.
+-   **Arquitetura Multi-Tenant (Backend):** Refatoração dos modelos de dados, criação de endpoints para o Super Admin e migração dos dados existentes.
+-   **Sistema de Usuários (Admin/Colaborador):** Implementação completa de autenticação JWT, CRUD de usuários, logs de atividade e frontend com rotas protegidas e menu dinâmico.
+-   **Landing Page:** Criação de uma página de apresentação e login.
+-   **Correção de Layout do Sidebar:** O botão de logout foi fixado na parte inferior.
+-   **UI da Página de Histórico:** A página foi refatorada para um layout de accordion, melhorando drasticamente a usabilidade.
+-   **Conversor OFX Completo:** Implementado e, posteriormente, ocultado da UI a pedido do usuário. Inclui suporte a arquivos  legados via .
+-   **Geração de Documentação:** Criados os documentos  e  (e suas versões em PDF).
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Inability to parse old binary  files (BIFF5 format)**
-    -   **Debug checklist:**
-        1.  Pesquisar por bibliotecas Python alternativas que suportem o formato BIFF5.
-        2.  Testar o uso de uma ferramenta externa, como  (do Gnumeric), para pré-converter o arquivo via  antes do processamento.
-    -   **Why to solve this issue and what will be achieved with this?** Para garantir que o aplicativo seja robusto e compatível com formatos de arquivo legados.
-    -   **Should Test frontend/backend/both after fix:** backend
-    -   **Is recurring issue?** N
+-   None.
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -91,109 +79,83 @@ Task Detail:
 **Key Technical Concepts**
 -   **Frontend:** React, Tailwind CSS
 -   **Backend:** FastAPI (Python)
--   **Database:** MongoDB (via )
--   **File Parsing:** , , usage: pdfplumber [-h] [--structure | --structure-text]
-                  [--format {csv,json,text}] [--types TYPES [TYPES ...]]
-                  [--include-attrs INCLUDE_ATTRS [INCLUDE_ATTRS ...]]
-                  [--exclude-attrs EXCLUDE_ATTRS [EXCLUDE_ATTRS ...]]
-                  [--laparams LAPARAMS] [--precision PRECISION]
-                  [--pages PAGES [PAGES ...]] [--indent INDENT]
-                  [infile]
-
-positional arguments:
-  infile
-
-options:
-  -h, --help            show this help message and exit
-  --structure           Write the structure tree as JSON. All other arguments
-                        except --pages, --laparams, and --indent will be
-                        ignored
-  --structure-text      Write the structure tree as JSON including text
-                        contents. All other arguments except --pages,
-                        --laparams, and --indent will be ignored
-  --format {csv,json,text}
-  --types TYPES [TYPES ...]
-  --include-attrs INCLUDE_ATTRS [INCLUDE_ATTRS ...]
-                        Include *only* these object attributes in output.
-  --exclude-attrs EXCLUDE_ATTRS [EXCLUDE_ATTRS ...]
-                        Exclude these object attributes from output.
-  --laparams LAPARAMS
-  --precision PRECISION
-  --pages PAGES [PAGES ...]
-  --indent INDENT       Indent level for JSON pretty-printing.
+-   **Database:** MongoDB ()
+-   **Authentication:** JWT (JSON Web Tokens)
+-   **Architecture:** SaaS Multi-tenant (em implementação)
 
 **key DB schema**
--   **companies:** 
--   **accounts:** 
--   **rules:** 
--   **statements:** 
--   **transactions:** 
--   **classification_history:** 
--   **accounting_processes:** 
+-   **tenants:** 
+-   **users:** 
+-   **activity_logs:** 
+-   **companies, accounts, statements, transactions:** Todos os modelos de dados operacionais devem ser atualizados para incluir um campo  para garantir o isolamento de dados.
 
 **changes in tech stack**
--   Nenhuma.
+-   : Adicionado para converter markdown para PDF.
+-   : Adicionado para usar  para ler arquivos  antigos.
 
 **All files of reference**
--   : Arquivo central do backend, modificado extensivamente para adicionar todas as novas funcionalidades e endpoints.
--   : Totalmente reescrito para o novo dashboard operacional.
--   : Modificado para adicionar a funcionalidade de edição em massa.
--   : Nova página para o sistema de gerenciamento de processamentos.
--   : Nova página (ainda esqueleto) para o conversor de OFX.
--   : Atualizado com as novas rotas.
--   : Atualizado com os novos links de menu.
--   : Criado e atualizado para documentar o progresso.
+-   : Arquivo central do backend, modificado para toda a lógica multi-tenant.
+-   : Reescrito para lidar com múltiplos layouts e perfis de usuário.
+-   : Modificado para ter um menu dinâmico.
+-   : Nova pasta com os esqueletos das páginas do Super Admin.
+-   : Nova página de entrada do sistema.
+-    e : Documentos gerados para o usuário.
 
 **Areas that need refactoring**:
--   O arquivo  está com mais de 2000 linhas e concentra toda a lógica do backend. É altamente recomendável refatorá-lo, separando a lógica em arquivos de ,  e  para melhorar a manutenibilidade.
+-    atingiu um tamanho crítico e deve ser refatorado em uma estrutura de projeto com ,  e  para evitar problemas de manutenção no futuro.
 
 **key api endpoints**
--   : Atualiza múltiplas transações de uma vez.
--   : Fornece as estatísticas para o novo dashboard operacional.
--   : CRUD para o sistema de Processamentos Contábeis.
--   : Cria processamentos em massa para um período.
--   : Endpoint (ainda sem lógica) para pré-visualizar um arquivo a ser convertido.
--   : Endpoint (ainda sem lógica) para converter um arquivo para OFX.
+-   
+-   
+-   
+-   **Super Admin:** , 
+-   **Todos os endpoints de dados** (ex: , ) precisam ser validados e atualizados para filtrar por .
 
 **Critical Info for New Agent**
--   A prioridade máxima (P0) é concluir o **Conversor de Extratos para OFX**. Apesar de o agente anterior ter corrigido os parsers para arquivos específicos, o usuário solicitou uma solução mais genérica e interativa, o que indica que essa é a direção preferida.
--   O novo conversor deve reutilizar a lógica dos parsers já existentes em  para a extração inicial dos dados na etapa de .
--   Após a conclusão do conversor, a próxima tarefa de alta prioridade é a implementação do Plano de Contas Dinâmico.
+-   A prioridade máxima é concluir a **arquitetura multi-tenant**.
+-   **A tarefa mais crítica e urgente é garantir o isolamento de dados no backend.** Você deve revisar **TODOS** os endpoints de dados e adicionar um filtro por  (obtido do JWT) para evitar que um escritório veja os dados de outro.
+-   O frontend do painel do Super Admin precisa ser construído do zero a partir dos arquivos de esqueleto existentes.
+-   O código do Conversor OFX está presente, mas desativado na UI. Não o remova, pois pode ser reativado no futuro.
 
 **documents and test reports created in this job**
+-   /app/DOCUMENTACAO_TECNICA.md
+-   /app/DOCUMENTACAO_TECNICA.pdf
+-   /app/GUIA_PRODUCAO.md
+-   /app/GUIA_PRODUCAO.pdf
 -   /app/memory/PRD.md
--   /app/test_reports/iteration_1.json
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. : Agente tira screenshot do novo sistema de processamentos com mais dados. **(DONE)**
-9. : Agente confirma o funcionamento completo do sistema de processamentos. **(DONE)**
-8. : Agente mostra o modal de edição de um processamento. **(DONE)**
-7. : Agente finaliza a tarefa do sistema de processamentos contábeis. **(DONE)**
-6. : Usuário relata que **ainda não consegue importar PDF, XLSX, CSV**, apenas OFX, e pede uma **ideia** de um conversor para OFX, mas pede para não alterar nada ainda. **(NEW REQUEST)**
-5. : Agente apresenta a ideia detalhada de um conversor interativo de arquivos para o formato OFX. **(PROPOSAL)**
-4. : Usuário aprova a ideia e fornece os requisitos detalhados para a construção do **Conversor de Extratos para OFX**. **(REQUIREMENTS PROVIDED)**
-3. : Agente confirma que irá iniciar a criação do módulo conversor. **(ACTION STARTED)**
-2. : Agente cria os arquivos e rotas iniciais para o conversor no frontend e backend. **(IN PROGRESS)**
-1. : O agente foi interrompido logo após criar a estrutura inicial do conversor OFX. **(LAST ACTION)**
+10.  (Agent advised against it and suggested better alternatives)
+9.  (Agent generated it)
+8.  (Agent generated it)
+7.  (Agent implemented it)
+6.  (Agent explained the options)
+5.  (Agent generated it)
+4.  (Agent fixed it)
+3.  (Agent explained the 'Save to GitHub' feature)
+2.  (Current main task, IN PROGRESS)
+1.  (User approved the start of the current task)
 
 **Project Health Check:**
--   **Broken:**
-    -   A importação de arquivos  em formato binário antigo (BIFF5) ainda não funciona.
--   **Mocked:**
-    -   Nenhuma parte do sistema está mockada. A nova página  é um esqueleto, mas não está mockada.
+-   **Broken:** Nada está quebrado, mas a implementação do multi-tenant está incompleta. O isolamento de dados no backend é um ponto de falha crítico em potencial se não for concluído.
+-   **Mocked:** As páginas do frontend do Super Admin são esqueletos vazios.
 
 **3rd Party Integrations**
--   Nenhuma.
+-   Nenhuma integração externa de API ativa no momento.
 
 **Testing status**
--   Testing agent used after significant changes: YES (para a funcionalidade de classificação inteligente).
+-   Testing agent used after significant changes: NO (Not since the last major feature - User Management)
 -   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: [Vários arquivos de teste para extratos e planos de contas foram criados e usados durante a sessão]
+-   Test files created: Scripts de teste ad-hoc via  foram usados para validar endpoints.
 -   Known regressions: None.
 
 **Credentials to test flow:**
--   Não são necessárias credenciais. O sistema não possui autenticação de usuário.
+-   **Super Admin:**
+    -   **Email:** 
+    -   **Senha:** 
+-   **Admin (do escritório migrado):**
+    -   **Email:** 
+    -   **Senha:** 
 
 **What agent forgot to execute**
--   O agente estava no meio da implementação da tarefa Conversor de Extratos para OFX quando foi interrompido. A lógica de frontend e backend para esta funcionalidade ainda precisa ser implementada.
--   As tarefas futuras da sessão anterior (Plano de Contas Dinâmico, Validação de Contas) ainda não foram iniciadas.</analysis>
+-   O agente iniciou a refatoração para multi-tenant, mas não aplicou a lógica de isolamento de dados () a todos os endpoints do backend. Apenas as rotas de usuário foram atualizadas. Esta é a pendência mais crítica a ser resolvida.</analysis>
