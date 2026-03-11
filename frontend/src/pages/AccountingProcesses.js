@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { 
   Building2, 
   Calendar,
@@ -22,9 +22,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
 
 const STATUS_CONFIG = {
   'NAO_INICIADO': { label: 'Não iniciado', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20', icon: Clock },
