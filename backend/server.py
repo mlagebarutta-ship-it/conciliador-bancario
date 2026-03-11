@@ -261,6 +261,7 @@ class AccountingProcess(BaseModel):
     """Processamento contábil mensal de uma empresa"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     company_id: str
     company_name: str
     year: int
@@ -293,6 +294,7 @@ class AccountingProcessUpdate(BaseModel):
 class Company(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     cnpj: str
     name: str
     address: Optional[str] = None
@@ -310,6 +312,7 @@ class CompanyCreate(BaseModel):
 class ChartOfAccounts(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     company_id: str
     name: str
     description: Optional[str] = None
@@ -323,6 +326,7 @@ class ChartOfAccountsCreate(BaseModel):
 class AccountItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     chart_id: str
     code: str
     description: str
@@ -338,6 +342,7 @@ class AccountItemCreate(BaseModel):
 class ClassificationRule(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     keyword: str
     debit_account_code: Optional[str] = None
     credit_account_code: Optional[str] = None
@@ -386,6 +391,7 @@ class TransactionUpdate(BaseModel):
 class ClassificationHistory(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     company_id: str
     description_pattern: str  # Descrição original da transação
     transaction_type: str  # C ou D
@@ -398,6 +404,7 @@ class ClassificationHistory(BaseModel):
 class BankStatement(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     company_id: str
     chart_id: str
     filename: str
