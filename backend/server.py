@@ -3498,16 +3498,20 @@ async def clear_company_history(company_id: str, current_user: Dict = Depends(re
     return {"message": f"{result.deleted_count} registros removidos"}
 
 @api_router.put("/classification-rules/{rule_id}", response_model=ClassificationRule)
-async def update_rule(rule_id: str, rule: ClassificationRuleCreate):
+async def update_rule(rule_id: str, rule: ClassificationRuleCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": rule_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     rule_data = rule.model_dump()
     result = await db.classification_rules.update_one(
-        {"id": rule_id},
+        query,
         {"$set": rule_data}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Regra não encontrada")
     
-    updated_rule = await db.classification_rules.find_one({"id": rule_id}, {"_id": 0})
+    updated_rule = await db.classification_rules.find_one(query, {"_id": 0})
     if isinstance(updated_rule.get('created_at'), str):
         updated_rule['created_at'] = datetime.fromisoformat(updated_rule['created_at'])
     return updated_rule
@@ -3519,8 +3523,19 @@ async def upload_statement(
     company_id: str = Query(...),
     chart_id: str = Query(...),
     bank_name: str = Query(...),
-    period: str = Query(...)
+    period: str = Query(...),
+    current_user: Dict = Depends(require_auth)
 ):
+    tenant_id = get_tenant_id(current_user)
+    
+    # Verificar se a empresa pertence ao tenant
+    company_query = {"id": company_id}
+    if tenant_id:
+        company_query["tenant_id"] = tenant_id
+    company = await db.companies.find_one(company_query, {"_id": 0})
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
     # Ler arquivo
     content = await file.read()
     
@@ -3572,6 +3587,7 @@ async def upload_statement(
     # Criar statement
     statement = BankStatement(
         id=statement_id,
+        tenant_id=tenant_id,
         company_id=company_id,
         chart_id=chart_id,
         filename=file.filename,
@@ -3595,6 +3611,18 @@ async def upload_statement(
     
     for trans in classified_transactions:
         await db.transactions.insert_one(trans.model_dump())
+    
+    # Log de atividade
+    await log_activity(
+        usuario_id=current_user['id'],
+        usuario_nome=current_user['nome'],
+        acao="Importou extrato",
+        detalhes=f"Período: {period}, Arquivo: {file.filename}",
+        empresa_id=company_id,
+        empresa_nome=company.get('name'),
+        tenant_id=tenant_id,
+        tenant_nome=current_user.get('tenant', {}).get('nome')
+    )
     
     return {
         "statement": statement,
