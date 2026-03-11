@@ -3398,16 +3398,22 @@ async def import_chart_accounts(
 
 # Account Items
 @api_router.post("/account-items", response_model=AccountItem)
-async def create_account_item(item: AccountItemCreate):
-    item_obj = AccountItem(**item.model_dump())
+async def create_account_item(item: AccountItemCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    item_obj = AccountItem(**item.model_dump(), tenant_id=tenant_id)
     doc = item_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.account_items.insert_one(doc)
     return item_obj
 
 @api_router.get("/account-items", response_model=List[AccountItem])
-async def get_account_items(chart_id: Optional[str] = None):
-    query = {"chart_id": chart_id} if chart_id else {}
+async def get_account_items(chart_id: Optional[str] = None, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    if chart_id:
+        query["chart_id"] = chart_id
     items = await db.account_items.find(query, {"_id": 0}).to_list(1000)
     for item in items:
         if isinstance(item.get('created_at'), str):
@@ -3415,56 +3421,80 @@ async def get_account_items(chart_id: Optional[str] = None):
     return items
 
 @api_router.delete("/account-items/{item_id}")
-async def delete_account_item(item_id: str):
-    result = await db.account_items.delete_one({"id": item_id})
+async def delete_account_item(item_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": item_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.account_items.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Conta não encontrada")
     return {"message": "Conta excluída com sucesso"}
 
 # Classification Rules
 @api_router.post("/classification-rules", response_model=ClassificationRule)
-async def create_rule(rule: ClassificationRuleCreate):
-    rule_obj = ClassificationRule(**rule.model_dump())
+async def create_rule(rule: ClassificationRuleCreate, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    rule_obj = ClassificationRule(**rule.model_dump(), tenant_id=tenant_id)
     doc = rule_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.classification_rules.insert_one(doc)
     return rule_obj
 
 @api_router.get("/classification-rules", response_model=List[ClassificationRule])
-async def get_rules():
-    rules = await db.classification_rules.find({}, {"_id": 0}).to_list(1000)
+async def get_rules(current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"tenant_id": tenant_id} if tenant_id else {}
+    rules = await db.classification_rules.find(query, {"_id": 0}).to_list(1000)
     for r in rules:
         if isinstance(r.get('created_at'), str):
             r['created_at'] = datetime.fromisoformat(r['created_at'])
     return rules
 
 @api_router.delete("/classification-rules/{rule_id}")
-async def delete_rule(rule_id: str):
-    result = await db.classification_rules.delete_one({"id": rule_id})
+async def delete_rule(rule_id: str, current_user: Dict = Depends(require_auth)):
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": rule_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.classification_rules.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Regra não encontrada")
     return {"message": "Regra excluída com sucesso"}
 
 # Classification History - Memória Inteligente
 @api_router.get("/classification-history")
-async def get_classification_history(company_id: Optional[str] = None):
+async def get_classification_history(company_id: Optional[str] = None, current_user: Dict = Depends(require_auth)):
     """Retorna o histórico de classificações aprendidas"""
-    query = {"company_id": company_id} if company_id else {}
+    tenant_id = get_tenant_id(current_user)
+    query = {}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    if company_id:
+        query["company_id"] = company_id
     history = await db.classification_history.find(query, {"_id": 0}).sort("usage_count", -1).to_list(1000)
     return history
 
 @api_router.delete("/classification-history/{history_id}")
-async def delete_classification_history(history_id: str):
+async def delete_classification_history(history_id: str, current_user: Dict = Depends(require_auth)):
     """Remove um registro do histórico de aprendizado"""
-    result = await db.classification_history.delete_one({"id": history_id})
+    tenant_id = get_tenant_id(current_user)
+    query = {"id": history_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.classification_history.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Registro não encontrado")
     return {"message": "Registro removido do histórico de aprendizado"}
 
 @api_router.delete("/classification-history/company/{company_id}")
-async def clear_company_history(company_id: str):
+async def clear_company_history(company_id: str, current_user: Dict = Depends(require_auth)):
     """Limpa todo o histórico de aprendizado de uma empresa"""
-    result = await db.classification_history.delete_many({"company_id": company_id})
+    tenant_id = get_tenant_id(current_user)
+    query = {"company_id": company_id}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    result = await db.classification_history.delete_many(query)
     return {"message": f"{result.deleted_count} registros removidos"}
 
 @api_router.put("/classification-rules/{rule_id}", response_model=ClassificationRule)
