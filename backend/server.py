@@ -1315,21 +1315,31 @@ async def login(credentials: UserLogin):
 @api_router.get("/auth/me")
 async def get_me(current_user: Dict = Depends(require_auth)):
     """Retorna dados do usuário logado"""
-    # Buscar empresas do usuário se for colaborador
-    empresas = []
-    if current_user.get('perfil') == 'colaborador':
-        vinculos = await db.usuario_empresas.find({"usuario_id": current_user['id']}, {"_id": 0}).to_list(1000)
-        empresa_ids = [v['empresa_id'] for v in vinculos]
-        if empresa_ids:
-            empresas = await db.companies.find({"id": {"$in": empresa_ids}}, {"_id": 0}).to_list(1000)
-    
-    return {
+    response = {
         "id": current_user['id'],
         "nome": current_user['nome'],
         "email": current_user['email'],
         "perfil": current_user['perfil'],
-        "empresas_vinculadas": empresas
+        "tenant_id": current_user.get('tenant_id'),
+        "tenant": current_user.get('tenant'),
+        "empresas_vinculadas": []
     }
+    
+    # Buscar empresas do usuário se for colaborador
+    if current_user.get('perfil') == PERFIL_COLABORADOR and current_user.get('tenant_id'):
+        vinculos = await db.usuario_empresas.find({
+            "usuario_id": current_user['id'],
+            "tenant_id": current_user['tenant_id']
+        }, {"_id": 0}).to_list(1000)
+        empresa_ids = [v['empresa_id'] for v in vinculos]
+        if empresa_ids:
+            empresas = await db.companies.find({
+                "id": {"$in": empresa_ids},
+                "tenant_id": current_user['tenant_id']
+            }, {"_id": 0}).to_list(1000)
+            response["empresas_vinculadas"] = empresas
+    
+    return response
 
 @api_router.post("/auth/change-password")
 async def change_password(
