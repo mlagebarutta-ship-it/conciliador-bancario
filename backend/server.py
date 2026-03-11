@@ -3373,7 +3373,8 @@ async def import_chart_accounts(
                         chart_id=chart_id,
                         code=codigo_conta,
                         description=descricao,
-                        account_type=tipo
+                        account_type=tipo,
+                        tenant_id=tenant_id
                     )
                     doc = account.model_dump()
                     doc['created_at'] = doc['created_at'].isoformat()
