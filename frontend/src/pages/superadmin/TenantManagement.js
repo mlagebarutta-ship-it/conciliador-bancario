@@ -46,7 +46,7 @@ export default function TenantManagement() {
 
   const loadTenants = async () => {
     try {
-      const response = await axios.get(`${API}/superadmin/tenants`, { headers: getAuthHeader() });
+      const response = await api.get(`/superadmin/tenants`);
       setTenants(response.data);
     } catch (error) {
       toast.error('Erro ao carregar escritórios');
@@ -60,10 +60,10 @@ export default function TenantManagement() {
     
     try {
       if (editingTenant) {
-        await axios.put(`${API}/superadmin/tenants/${editingTenant.id}`, formData, { headers: getAuthHeader() });
+        await api.put(`/superadmin/tenants/${editingTenant.id}`, formData);
         toast.success('Escritório atualizado');
       } else {
-        await axios.post(`${API}/superadmin/tenants`, formData, { headers: getAuthHeader() });
+        await api.post(`/superadmin/tenants`, formData);
         toast.success('Escritório criado');
       }
       
@@ -93,7 +93,7 @@ export default function TenantManagement() {
     const newStatus = tenant.status === 'ativo' ? 'bloqueado' : 'ativo';
     
     try {
-      await axios.put(`${API}/superadmin/tenants/${tenant.id}`, { status: newStatus }, { headers: getAuthHeader() });
+      await api.put(`/superadmin/tenants/${tenant.id}`, { status: newStatus });
       toast.success(`Escritório ${newStatus === 'ativo' ? 'ativado' : 'bloqueado'}`);
       loadTenants();
     } catch (error) {
@@ -105,7 +105,7 @@ export default function TenantManagement() {
     if (!window.confirm(`ATENÇÃO: Isso irá excluir PERMANENTEMENTE o escritório "${tenant.nome}" e TODOS os seus dados (empresas, extratos, usuários). Deseja continuar?`)) return;
     
     try {
-      await axios.delete(`${API}/superadmin/tenants/${tenant.id}`, { headers: getAuthHeader() });
+      await api.delete(`/superadmin/tenants/${tenant.id}`);
       toast.success('Escritório excluído');
       loadTenants();
     } catch (error) {
