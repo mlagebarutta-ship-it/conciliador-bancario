@@ -40,24 +40,69 @@ JWT_EXPIRATION_HOURS = 24
 
 security = HTTPBearer(auto_error=False)
 
+# ============= TENANT MODEL (ESCRITÓRIOS) =============
+
+class Tenant(BaseModel):
+    """Modelo de escritório de contabilidade (tenant)"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nome: str
+    cnpj: Optional[str] = None
+    email: str
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    plano: str = "basico"  # "basico", "profissional", "enterprise"
+    status: str = "ativo"  # "ativo", "bloqueado", "cancelado"
+    max_usuarios: int = 5
+    max_empresas: int = 20
+    data_criacao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    data_atualizacao: Optional[datetime] = None
+
+class TenantCreate(BaseModel):
+    nome: str
+    cnpj: Optional[str] = None
+    email: str
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    plano: str = "basico"
+
+class TenantUpdate(BaseModel):
+    nome: Optional[str] = None
+    cnpj: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    plano: Optional[str] = None
+    status: Optional[str] = None
+    max_usuarios: Optional[int] = None
+    max_empresas: Optional[int] = None
+
 # ============= USER MODELS =============
+
+# Perfis de usuário
+PERFIL_SUPER_ADMIN = "super_admin"      # Dono da plataforma
+PERFIL_ADMIN_TENANT = "admin_tenant"    # Dono do escritório
+PERFIL_COLABORADOR = "colaborador"      # Funcionário do escritório
 
 class User(BaseModel):
     """Modelo de usuário do sistema"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None  # None para super_admin
     nome: str
     email: str
     senha: str  # Hash da senha
-    perfil: str = "colaborador"  # "administrador" ou "colaborador"
+    perfil: str = PERFIL_COLABORADOR
     status: str = "ativo"  # "ativo" ou "inativo"
     data_criacao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    ultimo_acesso: Optional[datetime] = None
 
 class UserCreate(BaseModel):
     nome: str
     email: str
     senha: str
-    perfil: str = "colaborador"
+    perfil: str = PERFIL_COLABORADOR
+    tenant_id: Optional[str] = None
 
 class UserUpdate(BaseModel):
     nome: Optional[str] = None
@@ -65,6 +110,7 @@ class UserUpdate(BaseModel):
     senha: Optional[str] = None
     perfil: Optional[str] = None
     status: Optional[str] = None
+    tenant_id: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
