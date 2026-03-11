@@ -23,7 +23,7 @@ export default function ActivityLogs() {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/activity-logs?limit=${limit}`, { headers: getAuthHeader() });
+      const response = await api.get(`/activity-logs?limit=${limit}`);
       setLogs(response.data);
     } catch (error) {
       toast.error('Erro ao carregar logs');

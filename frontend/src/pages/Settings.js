@@ -22,7 +22,7 @@ export default function Settings() {
   
   const loadRules = async () => {
     try {
-      const response = await axios.get(`${API}/classification-rules`);
+      const response = await api.get(`/classification-rules`);
       setRules(response.data);
     } catch (error) {
       toast.error('Erro ao carregar regras');
@@ -36,11 +36,11 @@ export default function Settings() {
     try {
       if (editingId) {
         // Atualizar regra existente
-        await axios.put(`${API}/classification-rules/${editingId}`, formData);
+        await api.put(`/classification-rules/${editingId}`, formData);
         toast.success('Regra atualizada com sucesso');
       } else {
         // Criar nova regra
-        await axios.post(`${API}/classification-rules`, formData);
+        await api.post(`/classification-rules`, formData);
         toast.success('Regra criada com sucesso');
       }
       setShowForm(false);
@@ -67,7 +67,7 @@ export default function Settings() {
   const handleDelete = async (ruleId) => {
     if (!window.confirm('Tem certeza que deseja excluir esta regra?')) return;
     try {
-      await axios.delete(`${API}/classification-rules/${ruleId}`);
+      await api.delete(`/classification-rules/${ruleId}`);
       toast.success('Regra excluída com sucesso');
       loadRules();
     } catch (error) {
