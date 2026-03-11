@@ -1710,6 +1710,93 @@ async def init_super_admin():
         "aviso": "ALTERE A SENHA IMEDIATAMENTE!"
     }
 
+@api_router.post("/superadmin/migrate-data")
+async def migrate_data_to_tenant(current_user: Dict = Depends(require_super_admin)):
+    """Migra dados existentes que não têm tenant_id para o tenant padrão"""
+    
+    # Buscar o tenant padrão (primeiro tenant criado ou "Escritório Padrão")
+    default_tenant = await db.tenants.find_one(
+        {"$or": [{"nome": {"$regex": "Padrão", "$options": "i"}}, {}]},
+        {"_id": 0}
+    )
+    
+    if not default_tenant:
+        raise HTTPException(status_code=404, detail="Nenhum tenant encontrado. Crie um escritório primeiro.")
+    
+    tenant_id = default_tenant['id']
+    results = {}
+    
+    # Migrar empresas sem tenant_id
+    companies_result = await db.companies.update_many(
+        {"tenant_id": {"$exists": False}},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['companies'] = companies_result.modified_count
+    
+    # Também migrar empresas com tenant_id = null
+    companies_null = await db.companies.update_many(
+        {"tenant_id": None},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['companies'] += companies_null.modified_count
+    
+    # Migrar plano de contas
+    charts_result = await db.chart_of_accounts.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['chart_of_accounts'] = charts_result.modified_count
+    
+    # Migrar itens de conta
+    items_result = await db.account_items.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['account_items'] = items_result.modified_count
+    
+    # Migrar regras de classificação
+    rules_result = await db.classification_rules.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['classification_rules'] = rules_result.modified_count
+    
+    # Migrar extratos bancários
+    statements_result = await db.bank_statements.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['bank_statements'] = statements_result.modified_count
+    
+    # Migrar histórico de classificação
+    history_result = await db.classification_history.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['classification_history'] = history_result.modified_count
+    
+    # Migrar processamentos contábeis
+    processes_result = await db.accounting_processes.update_many(
+        {"$or": [{"tenant_id": {"$exists": False}}, {"tenant_id": None}]},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['accounting_processes'] = processes_result.modified_count
+    
+    # Log da ação
+    await log_activity(
+        usuario_id=current_user['id'],
+        usuario_nome=current_user['nome'],
+        acao="Migração de dados para tenant",
+        detalhes=f"Tenant: {default_tenant['nome']}, Resultados: {results}"
+    )
+    
+    return {
+        "message": "Migração concluída",
+        "tenant_id": tenant_id,
+        "tenant_nome": default_tenant['nome'],
+        "migrated": results
+    }
+
 # ============= USER MANAGEMENT ROUTES =============
 
 @api_router.get("/usuarios")
