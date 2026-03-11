@@ -2570,10 +2570,14 @@ async def link_statement_to_process(process_id: str, statement_id: str, current_
     return {"message": "Extrato vinculado ao processamento"}
 
 @api_router.get("/accounting-processes/responsibles/list")
-async def get_responsibles():
+async def get_responsibles(current_user: Dict = Depends(require_auth)):
     """Lista todos os responsáveis únicos"""
+    tenant_id = get_tenant_id(current_user)
+    query = {"responsible": {"$ne": None, "$ne": ""}}
+    if tenant_id:
+        query["tenant_id"] = tenant_id
     processes = await db.accounting_processes.find(
-        {"responsible": {"$ne": None, "$ne": ""}},
+        query,
         {"responsible": 1, "_id": 0}
     ).to_list(10000)
     
