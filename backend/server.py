@@ -128,7 +128,7 @@ class UserEmpresa(BaseModel):
     """Vínculo entre usuário e empresa"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    tenant_id: str
+    tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
     usuario_id: str
     empresa_id: str
 
