@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import { toast } from 'sonner';
 import { 
@@ -16,11 +16,7 @@ export default function ActivityLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(100);
 
-  useEffect(() => {
-    loadLogs();
-  }, [limit]);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/activity-logs?limit=${limit}`);
@@ -30,7 +26,11 @@ export default function ActivityLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [limit]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const filteredLogs = logs.filter(log => {
     const term = searchTerm.toLowerCase();
