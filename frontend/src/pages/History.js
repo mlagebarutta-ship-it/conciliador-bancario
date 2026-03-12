@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -22,11 +22,25 @@ export default function History() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   
-  useEffect(() => {
-    loadData();
+  const groupByCompany = useCallback((statements, companies) => {
+    const grouped = {};
+    companies.forEach(company => {
+      const companyStatements = statements.filter(s => s.company_id === company.id);
+      if (companyStatements.length > 0) {
+        grouped[company.id] = {
+          company,
+          statements: companyStatements.sort((a, b) => {
+            const [monthA, yearA] = a.period.split('/').map(Number);
+            const [monthB, yearB] = b.period.split('/').map(Number);
+            return yearB - yearA || monthB - monthA;
+          })
+        };
+      }
+    });
+    return grouped;
   }, []);
-  
-  const loadData = async () => {
+
+  const loadData = useCallback(async () => {
     try {
       const [statementsRes, companiesRes] = await Promise.all([
         api.get(`/bank-statements`),
@@ -46,7 +60,11 @@ export default function History() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupByCompany]);
+  
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
   
   const groupByCompany = (stmts, comps) => {
     const grouped = {};
