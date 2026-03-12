@@ -66,38 +66,7 @@ export default function History() {
     loadData();
   }, [loadData]);
   
-  const groupByCompany = (stmts, comps) => {
-    const grouped = {};
-    stmts.forEach(stmt => {
-      const company = comps.find(c => c.id === stmt.company_id);
-      const companyName = company?.name || 'Sem Empresa';
-      const companyId = stmt.company_id || 'unknown';
-      
-      if (!grouped[companyId]) {
-        grouped[companyId] = {
-          name: companyName,
-          statements: [],
-          totalTransactions: 0,
-          totalClassified: 0,
-          totalManual: 0,
-          totalBalance: 0
-        };
-      }
-      
-      grouped[companyId].statements.push(stmt);
-      grouped[companyId].totalTransactions += stmt.total_transactions || 0;
-      grouped[companyId].totalClassified += stmt.classified_count || 0;
-      grouped[companyId].totalManual += stmt.manual_count || 0;
-      grouped[companyId].totalBalance += stmt.balance || 0;
-    });
-    
-    // Ordenar statements dentro de cada grupo por data (mais recente primeiro)
-    Object.values(grouped).forEach(group => {
-      group.statements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    });
-    
-    return grouped;
-  };
+  // Agrupar statements por empresa (usa versão memoizada)
   
   const groupedStatements = useMemo(() => {
     let filtered = statements;
