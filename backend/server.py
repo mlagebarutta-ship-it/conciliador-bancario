@@ -1995,13 +1995,21 @@ async def delete_user(user_id: str, current_user: Dict = Depends(require_admin))
 @api_router.post("/usuarios/{user_id}/empresas")
 async def link_user_company(user_id: str, empresa_id: str, current_user: Dict = Depends(require_admin)):
     """Vincula uma empresa a um usuário"""
-    # Verificar se usuário existe
-    user = await db.usuarios.find_one({"id": user_id})
+    tenant_id = get_tenant_id(current_user)
+    
+    # Verificar se usuário existe e pertence ao tenant
+    user_query = {"id": user_id}
+    if tenant_id:
+        user_query["tenant_id"] = tenant_id
+    user = await db.usuarios.find_one(user_query)
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    # Verificar se empresa existe
-    empresa = await db.companies.find_one({"id": empresa_id})
+    # Verificar se empresa existe e pertence ao tenant
+    empresa_query = {"id": empresa_id}
+    if tenant_id:
+        empresa_query["tenant_id"] = tenant_id
+    empresa = await db.companies.find_one(empresa_query)
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     
@@ -2010,14 +2018,15 @@ async def link_user_company(user_id: str, empresa_id: str, current_user: Dict = 
     if existing:
         raise HTTPException(status_code=400, detail="Empresa já vinculada a este usuário")
     
-    vinculo = UserEmpresa(usuario_id=user_id, empresa_id=empresa_id)
+    vinculo = UserEmpresa(tenant_id=tenant_id, usuario_id=user_id, empresa_id=empresa_id)
     await db.usuario_empresas.insert_one(vinculo.model_dump())
     
     await log_activity(
         current_user['id'],
         current_user['nome'],
         "Empresa vinculada ao usuário",
-        f"Usuário: {user['nome']} - Empresa: {empresa['name']}"
+        f"Usuário: {user['nome']} - Empresa: {empresa['name']}",
+        tenant_id=tenant_id
     )
     
     return {"message": "Empresa vinculada com sucesso"}
