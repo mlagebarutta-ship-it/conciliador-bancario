@@ -78,8 +78,8 @@ export default function NewProcessing() {
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
       
-      const response = await axios.post(
-        `${API}/bank-statements/upload?company_id=${formData.company_id}&chart_id=${formData.chart_id}&bank_name=${formData.bank_name}&period=${formData.period}`,
+      const response = await api.post(
+        `/bank-statements/upload?company_id=${formData.company_id}&chart_id=${formData.chart_id}&bank_name=${formData.bank_name}&period=${formData.period}`,
         formDataUpload,
         {
           headers: {
