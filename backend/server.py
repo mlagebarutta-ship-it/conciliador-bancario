@@ -1097,7 +1097,47 @@ def parse_excel_statement(file_content: bytes) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=400, detail=f"Erro ao processar arquivo: {str(e)}")
 
 def parse_ofx_statement(file_content: bytes) -> List[Dict[str, Any]]:
-    """Parse OFX bank statement"""
+    """Parse OFX bank statement with multiple encoding support"""
+    # Lista de encodings para tentar (ordem de prioridade)
+    encodings_to_try = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'windows-1252', 'ascii']
+    
+    last_error = None
+    
+    for encoding in encodings_to_try:
+        try:
+            # Tentar decodificar o conteúdo com o encoding atual
+            decoded_content = file_content.decode(encoding)
+            # Re-encode para bytes em UTF-8 para o parser
+            utf8_content = decoded_content.encode('utf-8')
+            
+            ofx = ofxparse.OfxParser.parse(io.BytesIO(utf8_content))
+            transactions = []
+            
+            for account in ofx.accounts:
+                for trans in account.statement.transactions:
+                    amount = float(trans.amount)
+                    transactions.append({
+                        'date': trans.date.strftime('%d/%m/%Y'),
+                        'description': trans.memo or trans.payee or 'Sem descrição',
+                        'document': trans.id or None,
+                        'amount': amount,
+                        'transaction_type': 'C' if amount > 0 else 'D'
+                    })
+            
+            logger.info(f"OFX parseado com sucesso usando encoding: {encoding}")
+            return transactions
+            
+        except UnicodeDecodeError as e:
+            last_error = e
+            logger.debug(f"Falha ao decodificar OFX com {encoding}: {str(e)}")
+            continue
+        except Exception as e:
+            last_error = e
+            logger.debug(f"Erro ao parsear OFX com {encoding}: {str(e)}")
+            # Se não for erro de encoding, pode ser erro de parsing - tentar próximo encoding
+            continue
+    
+    # Se todos os encodings falharem, tentar parsing direto (bytes)
     try:
         ofx = ofxparse.OfxParser.parse(io.BytesIO(file_content))
         transactions = []
@@ -1105,18 +1145,22 @@ def parse_ofx_statement(file_content: bytes) -> List[Dict[str, Any]]:
         for account in ofx.accounts:
             for trans in account.statement.transactions:
                 amount = float(trans.amount)
+                # Limpar caracteres inválidos da descrição
+                desc = trans.memo or trans.payee or 'Sem descrição'
+                if isinstance(desc, bytes):
+                    desc = desc.decode('latin-1', errors='replace')
                 transactions.append({
                     'date': trans.date.strftime('%d/%m/%Y'),
-                    'description': trans.memo or trans.payee or 'Sem descrição',
+                    'description': desc,
                     'document': trans.id or None,
                     'amount': amount,
                     'transaction_type': 'C' if amount > 0 else 'D'
                 })
         
         return transactions
-    
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao processar OFX: {str(e)}")
+        logger.error(f"Todos os métodos de parsing OFX falharam: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erro ao processar OFX. O arquivo pode estar corrompido ou em formato não suportado. Detalhes: {str(last_error or e)}")
 
 def calculate_similarity(str1: str, str2: str) -> float:
     """Calcula similaridade entre duas strings (0 a 1)"""
