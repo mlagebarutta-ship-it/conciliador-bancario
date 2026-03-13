@@ -215,7 +215,7 @@ async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(secur
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
     """Exige perfil de administrador do tenant"""
     user = await require_auth(credentials)
-    if user.get("perfil") not in [PERFIL_ADMIN_TENANT, PERFIL_SUPER_ADMIN]:
+    if user.get("perfil") not in PERFIS_ADMIN:
         raise HTTPException(status_code=403, detail="Acesso negado. Requer perfil de administrador.")
     return user
 
