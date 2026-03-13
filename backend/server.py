@@ -82,7 +82,11 @@ class TenantUpdate(BaseModel):
 # Perfis de usuário
 PERFIL_SUPER_ADMIN = "super_admin"      # Dono da plataforma
 PERFIL_ADMIN_TENANT = "admin_tenant"    # Dono do escritório
+PERFIL_ADMINISTRADOR = "administrador"  # Perfil legado (equivalente a admin_tenant)
 PERFIL_COLABORADOR = "colaborador"      # Funcionário do escritório
+
+# Lista de perfis de administrador (para validação)
+PERFIS_ADMIN = [PERFIL_ADMIN_TENANT, PERFIL_ADMINISTRADOR, PERFIL_SUPER_ADMIN]
 
 class User(BaseModel):
     """Modelo de usuário do sistema"""
