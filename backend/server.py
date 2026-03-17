@@ -3853,7 +3853,19 @@ async def update_rule(rule_id: str, rule: ClassificationRuleCreate, current_user
     query = {"id": rule_id}
     if tenant_id:
         query["tenant_id"] = tenant_id
+    
+    # Buscar nome da empresa se especificada
+    company_name = None
+    if rule.company_id:
+        company = await db.companies.find_one({"id": rule.company_id, "tenant_id": tenant_id}, {"_id": 0})
+        if company:
+            company_name = company.get('name')
+        else:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
     rule_data = rule.model_dump()
+    rule_data['company_name'] = company_name
+    
     result = await db.classification_rules.update_one(
         query,
         {"$set": rule_data}
