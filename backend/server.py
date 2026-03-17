@@ -3851,6 +3851,11 @@ async def upload_statement(
 ):
     tenant_id = get_tenant_id(current_user)
     
+    # Verificar se colaborador tem acesso à empresa
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None and company_id not in allowed_company_ids:
+        raise HTTPException(status_code=403, detail="Você não tem acesso a esta empresa")
+    
     # Verificar se a empresa pertence ao tenant
     company_query = {"id": company_id}
     if tenant_id:
