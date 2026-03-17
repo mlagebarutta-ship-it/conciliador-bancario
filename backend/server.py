@@ -3402,6 +3402,14 @@ async def create_company(company: CompanyCreate, current_user: Dict = Depends(re
 async def get_companies(current_user: Dict = Depends(require_auth)):
     tenant_id = get_tenant_id(current_user)
     query = {"tenant_id": tenant_id} if tenant_id else {}
+    
+    # Se for colaborador, filtrar apenas empresas vinculadas
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None:
+        if not allowed_company_ids:
+            return []  # Colaborador sem empresas vinculadas
+        query["id"] = {"$in": allowed_company_ids}
+    
     companies = await db.companies.find(query, {"_id": 0}).to_list(1000)
     for c in companies:
         if isinstance(c.get('created_at'), str):
