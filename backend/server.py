@@ -2192,13 +2192,41 @@ async def get_dashboard_stats(current_user: Dict = Depends(require_auth)):
     current_month = f"{now.month:02d}/{now.year}"
     current_year_month = f"{now.year}{now.month:02d}"
     
-    # Buscar todas as empresas do tenant
+    # Buscar empresas do tenant (filtradas por acesso do usuário)
     company_query = {"tenant_id": tenant_id} if tenant_id else {}
+    
+    # Se for colaborador, filtrar apenas empresas vinculadas
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None:
+        if not allowed_company_ids:
+            # Colaborador sem empresas - retornar estatísticas zeradas
+            return {
+                "summary": {
+                    "total_companies": 0,
+                    "companies_up_to_date": 0,
+                    "companies_behind": 0,
+                    "companies_very_behind": 0,
+                    "companies_no_statement": 0,
+                    "total_statements": 0,
+                    "total_transactions": 0,
+                    "classified_transactions": 0,
+                    "pending_transactions": 0,
+                    "total_months_pending": 0
+                },
+                "most_behind_companies": [],
+                "most_pending_companies": [],
+                "companies_without_current_month": [],
+                "all_companies_status": []
+            }
+        company_query["id"] = {"$in": allowed_company_ids}
+    
     companies = await db.companies.find(company_query, {"_id": 0}).to_list(1000)
     total_companies = len(companies)
     
-    # Buscar todos os extratos do tenant
+    # Buscar extratos do tenant (filtrados por empresas acessíveis)
     statement_query = {"tenant_id": tenant_id} if tenant_id else {}
+    if allowed_company_ids is not None:
+        statement_query["company_id"] = {"$in": allowed_company_ids}
     statements = await db.bank_statements.find(statement_query, {"_id": 0}).to_list(10000)
     
     # Buscar IDs dos statements do tenant para filtrar transações
