@@ -366,6 +366,8 @@ class ClassificationRule(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     tenant_id: Optional[str] = None  # Multi-tenant: ID do escritório
+    company_id: Optional[str] = None  # Empresa específica (None = regra global do tenant)
+    company_name: Optional[str] = None  # Nome da empresa para exibição
     keyword: str
     debit_account_code: Optional[str] = None
     credit_account_code: Optional[str] = None
@@ -375,6 +377,7 @@ class ClassificationRule(BaseModel):
 
 class ClassificationRuleCreate(BaseModel):
     keyword: str
+    company_id: Optional[str] = None  # Se None, regra é global do tenant
     debit_account_code: Optional[str] = None
     credit_account_code: Optional[str] = None
     description: Optional[str] = None
