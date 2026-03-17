@@ -2495,6 +2495,21 @@ async def get_accounting_processes_stats(current_user: Dict = Depends(require_au
     query = {"is_archived": False}
     if tenant_id:
         query["tenant_id"] = tenant_id
+    
+    # Se for colaborador, filtrar apenas empresas vinculadas
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None:
+        if not allowed_company_ids:
+            return {
+                'total': 0,
+                'by_status': {},
+                'companies_with_pending': 0,
+                'overdue_count': 0,
+                'in_progress_count': 0,
+                'completed_count': 0
+            }
+        query["company_id"] = {"$in": allowed_company_ids}
+    
     all_processes = await db.accounting_processes.find(query, {"_id": 0}).to_list(10000)
     
     stats = {
