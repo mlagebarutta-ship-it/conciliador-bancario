@@ -3973,6 +3973,12 @@ async def get_transactions(statement_id: str, current_user: Dict = Depends(requi
     statement = await db.bank_statements.find_one(statement_query, {"_id": 0})
     if not statement:
         raise HTTPException(status_code=404, detail="Extrato não encontrado")
+    
+    # Verificar se colaborador tem acesso à empresa do extrato
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None and statement.get('company_id') not in allowed_company_ids:
+        raise HTTPException(status_code=403, detail="Você não tem acesso a este extrato")
+    
     transactions = await db.transactions.find({"statement_id": statement_id}, {"_id": 0}).to_list(1000)
     return transactions
 
