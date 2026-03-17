@@ -2446,7 +2446,19 @@ async def get_accounting_processes_grouped(
     query = {"is_archived": is_archived}
     if tenant_id:
         query["tenant_id"] = tenant_id
-    if company_id:
+    
+    # Se for colaborador, filtrar apenas empresas vinculadas
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None:
+        if not allowed_company_ids:
+            return {}  # Colaborador sem empresas vinculadas
+        if company_id:
+            if company_id not in allowed_company_ids:
+                raise HTTPException(status_code=403, detail="Você não tem acesso a esta empresa")
+            query["company_id"] = company_id
+        else:
+            query["company_id"] = {"$in": allowed_company_ids}
+    elif company_id:
         query["company_id"] = company_id
     
     processes = await db.accounting_processes.find(query, {"_id": 0}).sort([
