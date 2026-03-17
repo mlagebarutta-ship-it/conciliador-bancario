@@ -232,6 +232,25 @@ def get_tenant_id(user: Dict) -> Optional[str]:
         return None  # Super admin não tem tenant
     return user.get("tenant_id")
 
+async def get_user_allowed_company_ids(user: Dict) -> Optional[List[str]]:
+    """
+    Retorna lista de IDs de empresas que o usuário pode acessar.
+    - Admin/Super Admin: None (acessa todas do tenant)
+    - Colaborador: Lista de empresas vinculadas (ou lista vazia se nenhuma)
+    """
+    if user.get("perfil") in PERFIS_ADMIN:
+        return None  # Admin acessa todas as empresas do tenant
+    
+    # Colaborador - buscar empresas vinculadas
+    tenant_id = user.get("tenant_id")
+    vinculos = await db.usuario_empresas.find({
+        "usuario_id": user['id'],
+        "tenant_id": tenant_id
+    }, {"_id": 0}).to_list(1000)
+    
+    empresa_ids = [v['empresa_id'] for v in vinculos]
+    return empresa_ids  # Pode ser lista vazia
+
 async def log_activity(usuario_id: str, usuario_nome: str, acao: str, detalhes: str = None, 
                        empresa_id: str = None, empresa_nome: str = None, 
                        tenant_id: str = None, tenant_nome: str = None):
