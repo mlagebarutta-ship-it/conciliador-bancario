@@ -3,1054 +3,523 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domínio Bridge - Apresentação Executiva</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Domínio Bridge - Por que investir</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --primary: #1e3a5f;
-            --primary-light: #2d5a8b;
-            --accent: #0ea5e9;
-            --accent-light: #38bdf8;
-            --dark: #0f172a;
-            --gray-900: #111827;
-            --gray-800: #1f2937;
-            --gray-700: #374151;
-            --gray-600: #4b5563;
-            --gray-400: #9ca3af;
-            --gray-300: #d1d5db;
-            --gray-100: #f3f4f6;
-            --white: #ffffff;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--white);
-            color: var(--gray-900);
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
             overflow-x: hidden;
         }
         
-        /* Slide Base */
         .slide {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 80px 120px;
+            justify-content: center;
+            padding: 80px 140px;
             position: relative;
-            opacity: 1;
         }
         
-        .slide::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+        /* Slide 1 - Capa */
+        .slide-cover {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            align-items: center;
+            text-align: center;
         }
         
-        /* Navigation */
-        .nav-container {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
+        .main-title {
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: -3px;
+            margin-bottom: 24px;
+        }
+        
+        .main-title span {
+            background: linear-gradient(90deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tagline {
+            font-size: 24px;
+            color: #888;
+            font-weight: 400;
+            max-width: 600px;
+        }
+        
+        /* Slide de conteúdo */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        
+        .slide-title {
+            font-size: 52px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1.1;
+            margin-bottom: 40px;
+        }
+        
+        /* Lista de entregas */
+        .delivery-list {
+            list-style: none;
+            max-width: 900px;
+        }
+        
+        .delivery-list li {
             display: flex;
+            align-items: flex-start;
+            gap: 24px;
+            padding: 28px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .delivery-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .delivery-content h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .delivery-content p {
+            font-size: 16px;
+            color: #888;
+            line-height: 1.6;
+        }
+        
+        /* Grid de métricas */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            margin-top: 60px;
+            max-width: 900px;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 40px;
+        }
+        
+        .metric-value {
+            font-size: 56px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 18px;
+            color: #888;
+        }
+        
+        /* Slide de importância */
+        .importance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .importance-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 40px 32px;
+            transition: all 0.3s ease;
+        }
+        
+        .importance-card:hover {
+            border-color: #00d4ff;
+            transform: translateY(-4px);
+        }
+        
+        .importance-card .icon {
+            font-size: 32px;
+            margin-bottom: 24px;
+            display: block;
+        }
+        
+        .importance-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .importance-card p {
+            font-size: 15px;
+            color: #777;
+            line-height: 1.7;
+        }
+        
+        /* ROI */
+        .roi-highlight {
+            background: linear-gradient(135deg, #001a33 0%, #003366 100%);
+            border: 1px solid #004d99;
+            border-radius: 24px;
+            padding: 50px 60px;
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1000px;
+        }
+        
+        .roi-text h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .roi-text p {
+            font-size: 16px;
+            color: #88aacc;
+        }
+        
+        .roi-value {
+            text-align: right;
+        }
+        
+        .roi-value .amount {
+            font-size: 64px;
+            font-weight: 900;
+            color: #00ff88;
+        }
+        
+        .roi-value .period {
+            font-size: 18px;
+            color: #88aacc;
+        }
+        
+        /* Slide Final */
+        .slide-final {
+            background: linear-gradient(180deg, #0a0a0a 0%, #0d1a26 100%);
+            align-items: center;
+            text-align: center;
+        }
+        
+        .final-message {
+            font-size: 42px;
+            font-weight: 700;
+            max-width: 800px;
+            line-height: 1.4;
+            margin-bottom: 50px;
+        }
+        
+        .final-message span {
+            color: #00d4ff;
+        }
+        
+        .cta-button {
+            padding: 20px 50px;
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #00d4ff, #0066ff);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.4);
+        }
+        
+        /* Navegação */
+        .nav-dots {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
             gap: 12px;
             z-index: 1000;
-            background: var(--white);
-            padding: 12px 24px;
-            border-radius: 50px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         
         .nav-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: var(--gray-300);
+            background: rgba(255,255,255,0.2);
             cursor: pointer;
             transition: all 0.3s ease;
         }
         
         .nav-dot.active {
-            background: var(--primary);
-            transform: scale(1.3);
+            background: #00d4ff;
+            box-shadow: 0 0 15px #00d4ff;
         }
         
-        .nav-dot:hover {
-            background: var(--accent);
-        }
-        
-        /* Slide Counter */
         .slide-counter {
             position: fixed;
             bottom: 40px;
-            right: 60px;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 14px;
-            color: var(--gray-400);
-            font-weight: 500;
+            color: #555;
             z-index: 1000;
         }
         
-        /* Logo */
-        .logo-container {
-            position: absolute;
-            top: 40px;
-            left: 60px;
+        /* Comparativo */
+        .compare-box {
             display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 18px;
-        }
-        
-        .logo-text {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--primary);
-            letter-spacing: -0.5px;
-        }
-        
-        /* Typography */
-        .slide-title {
-            font-size: 52px;
-            font-weight: 800;
-            color: var(--gray-900);
-            line-height: 1.1;
-            letter-spacing: -2px;
-            margin-bottom: 24px;
-        }
-        
-        .slide-title span {
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .slide-subtitle {
-            font-size: 20px;
-            color: var(--gray-600);
-            font-weight: 400;
-            line-height: 1.6;
-            max-width: 600px;
-        }
-        
-        .section-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 16px;
-        }
-        
-        /* Cover Slide */
-        .slide-cover {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: linear-gradient(180deg, var(--white) 0%, var(--gray-100) 100%);
-        }
-        
-        .slide-cover .slide-title {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-        
-        .slide-cover .slide-subtitle {
-            max-width: 700px;
-            font-size: 22px;
-        }
-        
-        .cover-cta {
-            margin-top: 60px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-        
-        .btn-primary {
-            padding: 18px 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(30, 58, 95, 0.3);
-        }
-        
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 30px;
-            margin-top: 60px;
-        }
-        
-        .stat-card {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: 16px;
-            padding: 32px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 10px 40px rgba(14, 165, 233, 0.1);
-            transform: translateY(-4px);
-        }
-        
-        .stat-value {
-            font-size: 48px;
-            font-weight: 800;
-            color: var(--primary);
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: var(--gray-600);
-            font-weight: 500;
-        }
-        
-        /* Content Grid */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: center;
-            margin-top: 40px;
-        }
-        
-        .content-text h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--gray-900);
-            margin-bottom: 16px;
-        }
-        
-        .content-text p {
-            font-size: 16px;
-            color: var(--gray-600);
-            line-height: 1.8;
-        }
-        
-        /* Comparison */
-        .comparison-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 60px;
-            margin-top: 60px;
+            margin-top: 50px;
+            align-items: center;
         }
         
-        .comparison-box {
-            padding: 50px 60px;
+        .compare-item {
+            flex: 1;
+            padding: 40px;
             border-radius: 20px;
             text-align: center;
-            min-width: 280px;
         }
         
-        .comparison-box.before {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border: 2px solid #fecaca;
+        .compare-item.before {
+            background: rgba(255, 50, 50, 0.1);
+            border: 1px solid rgba(255, 50, 50, 0.3);
         }
         
-        .comparison-box.after {
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-            border: 2px solid #a7f3d0;
+        .compare-item.after {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
         }
         
-        .comparison-box .time {
-            font-size: 42px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-        
-        .comparison-box.before .time { color: var(--danger); }
-        .comparison-box.after .time { color: var(--success); }
-        
-        .comparison-box .desc {
-            font-size: 14px;
-            color: var(--gray-600);
-        }
-        
-        .comparison-arrow {
+        .compare-item .value {
             font-size: 48px;
-            color: var(--accent);
-        }
-        
-        /* Feature List */
-        .feature-list {
-            list-style: none;
-            margin-top: 40px;
-        }
-        
-        .feature-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--gray-200);
-        }
-        
-        .feature-list li:last-child {
-            border-bottom: none;
-        }
-        
-        .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        
-        .feature-content h4 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--gray-900);
-            margin-bottom: 4px;
-        }
-        
-        .feature-content p {
-            font-size: 14px;
-            color: var(--gray-600);
-        }
-        
-        /* ROI Table */
-        .roi-container {
-            background: var(--gray-900);
-            border-radius: 20px;
-            padding: 50px;
-            margin-top: 50px;
-            color: white;
-        }
-        
-        .roi-container h3 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 30px;
-            color: white;
-        }
-        
-        .roi-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .roi-table th {
-            text-align: left;
-            padding: 16px 20px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--gray-400);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid var(--gray-700);
-        }
-        
-        .roi-table td {
-            padding: 20px;
-            font-size: 16px;
-            border-bottom: 1px solid var(--gray-800);
-        }
-        
-        .roi-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .roi-highlight {
-            color: var(--success);
-            font-weight: 700;
-            font-size: 20px;
-        }
-        
-        .roi-total {
-            background: rgba(16, 185, 129, 0.1);
-        }
-        
-        .roi-total td {
-            font-weight: 700;
-            font-size: 18px;
-        }
-        
-        /* Progress Bar */
-        .progress-section {
-            margin-top: 60px;
-        }
-        
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        
-        .progress-label span {
-            font-size: 14px;
-            color: var(--gray-600);
-        }
-        
-        .progress-label strong {
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--primary);
-        }
-        
-        .progress-bar {
-            height: 16px;
-            background: var(--gray-200);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 8px;
-            transition: width 1s ease;
-        }
-        
-        /* Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-top: 50px;
-        }
-        
-        .card {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.3s ease;
-        }
-        
-        .card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        }
-        
-        .card-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(30, 58, 95, 0.1) 100%);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        
-        .card h4 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--gray-900);
+            font-weight: 900;
             margin-bottom: 8px;
         }
         
-        .card p {
-            font-size: 14px;
-            color: var(--gray-600);
-            line-height: 1.6;
-        }
+        .compare-item.before .value { color: #ff5555; }
+        .compare-item.after .value { color: #00ff88; }
         
-        /* Timeline */
-        .timeline {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 60px;
-            position: relative;
-        }
-        
-        .timeline::before {
-            content: '';
-            position: absolute;
-            top: 30px;
-            left: 60px;
-            right: 60px;
-            height: 2px;
-            background: var(--gray-200);
-        }
-        
-        .timeline-item {
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .timeline-number {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 auto 16px;
-        }
-        
-        .timeline-title {
+        .compare-item .label {
             font-size: 16px;
-            font-weight: 600;
-            color: var(--gray-900);
-            margin-bottom: 4px;
+            color: #888;
         }
         
-        .timeline-desc {
-            font-size: 13px;
-            color: var(--gray-500);
+        .compare-arrow {
+            font-size: 40px;
+            color: #00d4ff;
         }
         
-        /* Final Slide */
-        .slide-final {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
-            color: white;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-        
-        .slide-final .slide-title {
-            color: white;
-            font-size: 64px;
-        }
-        
-        .slide-final .slide-title span {
-            background: linear-gradient(90deg, var(--accent-light) 0%, var(--white) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .slide-final .slide-subtitle {
-            color: rgba(255,255,255,0.7);
-            max-width: 600px;
-        }
-        
-        .contact-info {
-            margin-top: 50px;
-            display: flex;
-            gap: 40px;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: rgba(255,255,255,0.8);
-            font-size: 16px;
-        }
-        
-        .contact-item i {
-            color: var(--accent-light);
-        }
-        
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate {
-            animation: fadeInUp 0.6s ease forwards;
-        }
-        
-        /* Responsive */
         @media (max-width: 1200px) {
-            .slide {
-                padding: 60px 60px;
-            }
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .cards-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .slide {
-                padding: 40px 30px;
-            }
-            .slide-title {
-                font-size: 36px;
-            }
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-            .comparison-container {
-                flex-direction: column;
-            }
-            .stats-grid,
-            .cards-grid {
-                grid-template-columns: 1fr;
-            }
+            .slide { padding: 60px 60px; }
+            .main-title { font-size: 48px; }
+            .slide-title { font-size: 40px; }
+            .importance-grid { grid-template-columns: 1fr; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .compare-box { flex-direction: column; }
         }
     </style>
 </head>
 <body>
 
-<!-- Slide 1: Cover -->
+<!-- SLIDE 1: CAPA -->
 <section class="slide slide-cover" id="slide1">
-    <div class="section-label">Apresentação Executiva</div>
-    <h1 class="slide-title">Domínio <span>Bridge</span></h1>
-    <p class="slide-subtitle">
-        Plataforma inteligente de conciliação contábil que transforma 
-        a produtividade do seu escritório através de automação e aprendizado de máquina.
-    </p>
-    <div class="cover-cta">
-        <button class="btn-primary" onclick="nextSlide()">
-            Iniciar Apresentação <i class="fas fa-arrow-right"></i>
-        </button>
-    </div>
+    <h1 class="main-title">Domínio <span>Bridge</span></h1>
+    <p class="tagline">O que entregamos e por que sua empresa precisa disso</p>
 </section>
 
-<!-- Slide 2: O Desafio -->
+<!-- SLIDE 2: O QUE ENTREGAMOS -->
 <section class="slide" id="slide2">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
+    <div class="section-title">O que entregamos</div>
+    <h2 class="slide-title">Automação completa da<br>classificação contábil</h2>
     
-    <div style="max-width: 800px; margin-top: 60px;">
-        <div class="section-label">O Desafio</div>
-        <h1 class="slide-title">O custo oculto da <span>classificação manual</span></h1>
-        <p class="slide-subtitle">
-            Escritórios de contabilidade investem centenas de horas mensais em tarefas 
-            repetitivas de classificação de extratos bancários.
-        </p>
-    </div>
-    
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value">2-4h</div>
-            <div class="stat-label">Tempo médio por extrato</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">150+</div>
-            <div class="stat-label">Transações por extrato</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">960h</div>
-            <div class="stat-label">Horas/ano desperdiçadas</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">5-10%</div>
-            <div class="stat-label">Taxa de erro manual</div>
-        </div>
-    </div>
+    <ul class="delivery-list">
+        <li>
+            <div class="delivery-icon"><i class="fas fa-bolt"></i></div>
+            <div class="delivery-content">
+                <h3>Classificação automática de transações</h3>
+                <p>O sistema lê o extrato bancário e classifica 90% das transações sozinho, sem intervenção humana.</p>
+            </div>
+        </li>
+        <li>
+            <div class="delivery-icon"><i class="fas fa-brain"></i></div>
+            <div class="delivery-content">
+                <h3>Aprendizado contínuo</h3>
+                <p>Cada classificação manual ensina o sistema. Na próxima vez, ele faz sozinho.</p>
+            </div>
+        </li>
+        <li>
+            <div class="delivery-icon"><i class="fas fa-file-export"></i></div>
+            <div class="delivery-content">
+                <h3>Arquivo pronto para o Domínio</h3>
+                <p>Exporta Excel formatado para importação direta no sistema Domínio Thomson Reuters.</p>
+            </div>
+        </li>
+    </ul>
 </section>
 
-<!-- Slide 3: A Solução -->
+<!-- SLIDE 3: MAIS ENTREGAS -->
 <section class="slide" id="slide3">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
+    <div class="section-title">O que entregamos</div>
+    <h2 class="slide-title">Controle total da<br>operação contábil</h2>
     
-    <div style="max-width: 700px; margin-top: 60px;">
-        <div class="section-label">A Solução</div>
-        <h1 class="slide-title">Automação <span>inteligente</span> que aprende com você</h1>
-        <p class="slide-subtitle">
-            Nossa plataforma utiliza algoritmos de aprendizado para classificar 
-            automaticamente transações, melhorando a cada uso.
-        </p>
-    </div>
-    
-    <div class="comparison-container">
-        <div class="comparison-box before">
-            <div class="time">2-4 horas</div>
-            <div class="desc">Processo manual tradicional</div>
-            <div style="margin-top: 16px; color: var(--danger);">
-                <i class="fas fa-times-circle"></i> 100% Manual
+    <ul class="delivery-list">
+        <li>
+            <div class="delivery-icon"><i class="fas fa-building"></i></div>
+            <div class="delivery-content">
+                <h3>Gestão centralizada de empresas</h3>
+                <p>Todas as empresas clientes em um só lugar, com planos de contas individuais.</p>
             </div>
-        </div>
-        
-        <div class="comparison-arrow">
-            <i class="fas fa-arrow-right"></i>
-        </div>
-        
-        <div class="comparison-box after">
-            <div class="time">15-30 min</div>
-            <div class="desc">Com Domínio Bridge</div>
-            <div style="margin-top: 16px; color: var(--success);">
-                <i class="fas fa-check-circle"></i> 90% Automático
+        </li>
+        <li>
+            <div class="delivery-icon"><i class="fas fa-users"></i></div>
+            <div class="delivery-content">
+                <h3>Controle de equipe</h3>
+                <p>Defina quem pode acessar o quê. Administradores e colaboradores com permissões diferentes.</p>
             </div>
-        </div>
-    </div>
+        </li>
+        <li>
+            <div class="delivery-icon"><i class="fas fa-chart-bar"></i></div>
+            <div class="delivery-content">
+                <h3>Dashboard de produtividade</h3>
+                <p>Veja em tempo real: empresas atrasadas, pendências e status de cada mês.</p>
+            </div>
+        </li>
+    </ul>
 </section>
 
-<!-- Slide 4: Como Funciona -->
+<!-- SLIDE 4: RESULTADO CONCRETO -->
 <section class="slide" id="slide4">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
+    <div class="section-title">Resultado concreto</div>
+    <h2 class="slide-title">Transformação mensurável</h2>
+    
+    <div class="compare-box">
+        <div class="compare-item before">
+            <div class="value">2-4h</div>
+            <div class="label">Tempo por extrato hoje</div>
+        </div>
+        <div class="compare-arrow"><i class="fas fa-arrow-right"></i></div>
+        <div class="compare-item after">
+            <div class="value">20min</div>
+            <div class="label">Com Domínio Bridge</div>
+        </div>
     </div>
     
-    <div style="max-width: 700px; margin-top: 60px;">
-        <div class="section-label">Como Funciona</div>
-        <h1 class="slide-title">Tecnologia de <span>aprendizado</span> contínuo</h1>
-        <p class="slide-subtitle">
-            O sistema evolui automaticamente, aprendendo os padrões de classificação 
-            específicos de cada empresa.
-        </p>
-    </div>
-    
-    <div class="timeline">
-        <div class="timeline-item">
-            <div class="timeline-number">1</div>
-            <div class="timeline-title">Upload do Extrato</div>
-            <div class="timeline-desc">OFX, Excel, CSV ou PDF</div>
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-value">93%</div>
+            <div class="metric-label">Transações classificadas automaticamente</div>
         </div>
-        <div class="timeline-item">
-            <div class="timeline-number">2</div>
-            <div class="timeline-title">Classificação Automática</div>
-            <div class="timeline-desc">IA processa transações</div>
-        </div>
-        <div class="timeline-item">
-            <div class="timeline-number">3</div>
-            <div class="timeline-title">Revisão Rápida</div>
-            <div class="timeline-desc">Apenas exceções</div>
-        </div>
-        <div class="timeline-item">
-            <div class="timeline-number">4</div>
-            <div class="timeline-title">Exportação</div>
-            <div class="timeline-desc">Pronto para Domínio</div>
+        <div class="metric-card">
+            <div class="metric-value">85%</div>
+            <div class="metric-label">Redução no tempo de trabalho</div>
         </div>
     </div>
 </section>
 
-<!-- Slide 5: Resultados -->
+<!-- SLIDE 5: POR QUE É IMPORTANTE -->
 <section class="slide" id="slide5">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
+    <div class="section-title">Por que é importante</div>
+    <h2 class="slide-title">O custo de não ter</h2>
     
-    <div class="content-grid" style="margin-top: 60px;">
-        <div>
-            <div class="section-label">Resultados Comprovados</div>
-            <h1 class="slide-title">Performance em <span>produção</span></h1>
-            <p class="slide-subtitle">
-                Métricas reais de escritórios que já utilizam a plataforma, 
-                demonstrando eficiência e precisão excepcionais.
-            </p>
-            
-            <div class="progress-section">
-                <div class="progress-label">
-                    <span>Taxa de Classificação Automática</span>
-                    <strong>93%</strong>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 93%;"></div>
-                </div>
-            </div>
+    <div class="importance-grid">
+        <div class="importance-card">
+            <span class="icon">⏱️</span>
+            <h3>Tempo desperdiçado</h3>
+            <p>Sua equipe gasta centenas de horas por ano em trabalho repetitivo que uma máquina faz em segundos.</p>
         </div>
-        
-        <div>
-            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 0;">
-                <div class="stat-card">
-                    <div class="stat-value" style="font-size: 36px;">3.615</div>
-                    <div class="stat-label">Transações automáticas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="font-size: 36px;">253</div>
-                    <div class="stat-label">Revisão manual</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="font-size: 36px;">99.2%</div>
-                    <div class="stat-label">Precisão</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" style="font-size: 36px;">85%</div>
-                    <div class="stat-label">Redução de tempo</div>
-                </div>
-            </div>
+        <div class="importance-card">
+            <span class="icon">💸</span>
+            <h3>Dinheiro jogado fora</h3>
+            <p>Você paga salário de especialista para fazer trabalho operacional que não agrega valor.</p>
+        </div>
+        <div class="importance-card">
+            <span class="icon">😤</span>
+            <h3>Equipe desmotivada</h3>
+            <p>Ninguém quer passar o dia inteiro digitando números. Talentos vão embora.</p>
+        </div>
+        <div class="importance-card">
+            <span class="icon">❌</span>
+            <h3>Erros constantes</h3>
+            <p>Trabalho manual gera erros. Erros geram retrabalho. Retrabalho custa caro.</p>
+        </div>
+        <div class="importance-card">
+            <span class="icon">📉</span>
+            <h3>Atrasos na entrega</h3>
+            <p>Cliente espera, cliente reclama, cliente vai embora. Reputação em risco.</p>
+        </div>
+        <div class="importance-card">
+            <span class="icon">🚫</span>
+            <h3>Sem escalabilidade</h3>
+            <p>Quer crescer? Precisa contratar mais. Com automação, a mesma equipe faz o dobro.</p>
         </div>
     </div>
 </section>
 
-<!-- Slide 6: ROI -->
+<!-- SLIDE 6: IMPACTO FINANCEIRO -->
 <section class="slide" id="slide6">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
+    <div class="section-title">Impacto financeiro</div>
+    <h2 class="slide-title">Quanto você economiza</h2>
+    
+    <div class="roi-highlight">
+        <div class="roi-text">
+            <h3>Economia anual projetada</h3>
+            <p>Baseado em 50 empresas • 100h/mês em classificação • R$35/hora</p>
+        </div>
+        <div class="roi-value">
+            <div class="amount">R$ 33.600</div>
+            <div class="period">por ano</div>
+        </div>
     </div>
     
-    <div style="max-width: 600px; margin-top: 60px;">
-        <div class="section-label">Retorno do Investimento</div>
-        <h1 class="slide-title">Impacto <span>financeiro</span> mensurável</h1>
-        <p class="slide-subtitle">
-            Análise de ROI baseada em um escritório com 50 empresas ativas.
-        </p>
-    </div>
-    
-    <div class="roi-container">
-        <h3>Projeção de Economia Anual</h3>
-        <table class="roi-table">
-            <thead>
-                <tr>
-                    <th>Métrica</th>
-                    <th>Cenário Atual</th>
-                    <th>Com Domínio Bridge</th>
-                    <th>Economia</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Horas mensais em classificação</td>
-                    <td>100 horas</td>
-                    <td>20 horas</td>
-                    <td class="roi-highlight">80 horas</td>
-                </tr>
-                <tr>
-                    <td>Custo hora/colaborador</td>
-                    <td>R$ 35,00</td>
-                    <td>R$ 35,00</td>
-                    <td>—</td>
-                </tr>
-                <tr>
-                    <td>Custo operacional mensal</td>
-                    <td>R$ 3.500</td>
-                    <td>R$ 700</td>
-                    <td class="roi-highlight">R$ 2.800</td>
-                </tr>
-                <tr class="roi-total">
-                    <td>Economia Anual Projetada</td>
-                    <td></td>
-                    <td></td>
-                    <td class="roi-highlight" style="font-size: 28px;">R$ 33.600</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<!-- Slide 7: Funcionalidades -->
-<section class="slide" id="slide7">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
-    
-    <div style="max-width: 600px; margin-top: 60px;">
-        <div class="section-label">Funcionalidades</div>
-        <h1 class="slide-title">Recursos <span>completos</span> para sua operação</h1>
-    </div>
-    
-    <div class="cards-grid">
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-file-import"></i></div>
-            <h4>Multi-Formato</h4>
-            <p>Importação de extratos em OFX, Excel, CSV e PDF de qualquer banco brasileiro.</p>
+    <div class="metrics-grid" style="margin-top: 40px;">
+        <div class="metric-card">
+            <div class="metric-value">80h</div>
+            <div class="metric-label">Horas liberadas por mês</div>
         </div>
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-brain"></i></div>
-            <h4>IA Adaptativa</h4>
-            <p>Sistema que aprende os padrões de classificação específicos de cada empresa.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-file-export"></i></div>
-            <h4>Integração Domínio</h4>
-            <p>Exportação formatada para importação direta no sistema Domínio Thomson Reuters.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-building"></i></div>
-            <h4>Multi-Empresa</h4>
-            <p>Gestão centralizada de múltiplas empresas com planos de contas individualizados.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-users"></i></div>
-            <h4>Controle de Acesso</h4>
-            <p>Perfis de administrador e colaborador com permissões granulares.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
-            <h4>Dashboard Analítico</h4>
-            <p>Visão em tempo real de pendências, status e produtividade da equipe.</p>
+        <div class="metric-card">
+            <div class="metric-value">2 meses</div>
+            <div class="metric-label">Payback do investimento</div>
         </div>
     </div>
 </section>
 
-<!-- Slide 8: Segurança -->
-<section class="slide" id="slide8">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
-    
-    <div class="content-grid" style="margin-top: 60px;">
-        <div>
-            <div class="section-label">Arquitetura</div>
-            <h1 class="slide-title">Infraestrutura <span>segura</span> e escalável</h1>
-            <p class="slide-subtitle">
-                Plataforma desenvolvida com as melhores práticas de segurança 
-                e arquitetura multi-tenant para escalabilidade.
-            </p>
-        </div>
-        
-        <div>
-            <ul class="feature-list">
-                <li>
-                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
-                    <div class="feature-content">
-                        <h4>Isolamento de Dados</h4>
-                        <p>Cada escritório possui dados completamente isolados e independentes.</p>
-                    </div>
-                </li>
-                <li>
-                    <div class="feature-icon"><i class="fas fa-key"></i></div>
-                    <div class="feature-content">
-                        <h4>Autenticação JWT</h4>
-                        <p>Tokens seguros com expiração automática e renovação controlada.</p>
-                    </div>
-                </li>
-                <li>
-                    <div class="feature-icon"><i class="fas fa-history"></i></div>
-                    <div class="feature-content">
-                        <h4>Auditoria Completa</h4>
-                        <p>Log detalhado de todas as operações para compliance e rastreabilidade.</p>
-                    </div>
-                </li>
-                <li>
-                    <div class="feature-icon"><i class="fas fa-cloud"></i></div>
-                    <div class="feature-content">
-                        <h4>Cloud Native</h4>
-                        <p>Arquitetura 100% em nuvem com alta disponibilidade e backup automático.</p>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </div>
-</section>
-
-<!-- Slide 9: Próximos Passos -->
-<section class="slide" id="slide9">
-    <div class="logo-container">
-        <div class="logo-icon">DB</div>
-        <span class="logo-text">Domínio Bridge</span>
-    </div>
-    
-    <div style="max-width: 700px; margin-top: 60px;">
-        <div class="section-label">Implantação</div>
-        <h1 class="slide-title">Plano de <span>implementação</span></h1>
-        <p class="slide-subtitle">
-            Metodologia estruturada para garantir uma adoção bem-sucedida 
-            com mínimo impacto na operação atual.
-        </p>
-    </div>
-    
-    <div class="timeline">
-        <div class="timeline-item">
-            <div class="timeline-number">1</div>
-            <div class="timeline-title">Piloto</div>
-            <div class="timeline-desc">5 empresas • 30 dias</div>
-        </div>
-        <div class="timeline-item">
-            <div class="timeline-number">2</div>
-            <div class="timeline-title">Validação</div>
-            <div class="timeline-desc">Métricas e ajustes</div>
-        </div>
-        <div class="timeline-item">
-            <div class="timeline-number">3</div>
-            <div class="timeline-title">Expansão</div>
-            <div class="timeline-desc">Rollout gradual</div>
-        </div>
-        <div class="timeline-item">
-            <div class="timeline-number">4</div>
-            <div class="timeline-title">Otimização</div>
-            <div class="timeline-desc">Melhoria contínua</div>
-        </div>
-    </div>
-    
-    <div class="stats-grid" style="margin-top: 60px; grid-template-columns: repeat(3, 1fr);">
-        <div class="stat-card">
-            <div class="stat-value" style="font-size: 36px; color: var(--success);">30</div>
-            <div class="stat-label">Dias para piloto</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value" style="font-size: 36px; color: var(--accent);">Zero</div>
-            <div class="stat-label">Interrupção na operação</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value" style="font-size: 36px; color: var(--primary);">Total</div>
-            <div class="stat-label">Suporte na implantação</div>
-        </div>
-    </div>
-</section>
-
-<!-- Slide 10: Final -->
-<section class="slide slide-final" id="slide10">
-    <div class="section-label" style="color: rgba(255,255,255,0.5);">Conclusão</div>
-    <h1 class="slide-title">Pronto para <span>transformar</span><br>sua operação?</h1>
-    <p class="slide-subtitle">
-        Agende uma demonstração personalizada e descubra como o Domínio Bridge 
-        pode otimizar a produtividade do seu escritório.
+<!-- SLIDE 7: CONCLUSÃO -->
+<section class="slide slide-final" id="slide7">
+    <p class="final-message">
+        A pergunta não é se você <span>pode investir</span> nisso.<br>
+        A pergunta é se você pode <span>continuar sem</span>.
     </p>
     
-    <button class="btn-primary" style="margin-top: 50px; background: white; color: var(--primary);">
-        <i class="fas fa-calendar-alt"></i> Agendar Demonstração
+    <button class="cta-button">
+        Vamos começar? <i class="fas fa-arrow-right" style="margin-left: 10px;"></i>
     </button>
-    
-    <div style="margin-top: 80px; font-size: 14px; color: rgba(255,255,255,0.4);">
-        Domínio Bridge © 2026 • Transformando a Contabilidade Digital
-    </div>
 </section>
 
-<!-- Navigation -->
-<div class="nav-container">
+<!-- Navegação -->
+<div class="nav-dots">
     <div class="nav-dot active" onclick="goToSlide(1)"></div>
     <div class="nav-dot" onclick="goToSlide(2)"></div>
     <div class="nav-dot" onclick="goToSlide(3)"></div>
@@ -1058,72 +527,45 @@
     <div class="nav-dot" onclick="goToSlide(5)"></div>
     <div class="nav-dot" onclick="goToSlide(6)"></div>
     <div class="nav-dot" onclick="goToSlide(7)"></div>
-    <div class="nav-dot" onclick="goToSlide(8)"></div>
-    <div class="nav-dot" onclick="goToSlide(9)"></div>
-    <div class="nav-dot" onclick="goToSlide(10)"></div>
 </div>
 
-<div class="slide-counter">
-    <span id="currentSlide">1</span> / 10
-</div>
+<div class="slide-counter"><span id="current">1</span> / 7</div>
 
 <script>
-    let currentSlide = 1;
-    const totalSlides = 10;
+    let current = 1;
+    const total = 7;
     
-    function updateNavigation() {
-        document.querySelectorAll('.nav-dot').forEach((dot, index) => {
-            dot.classList.toggle('active', index + 1 === currentSlide);
+    function updateNav() {
+        document.querySelectorAll('.nav-dot').forEach((d, i) => {
+            d.classList.toggle('active', i + 1 === current);
         });
-        document.getElementById('currentSlide').textContent = currentSlide;
+        document.getElementById('current').textContent = current;
     }
     
     function goToSlide(n) {
-        currentSlide = n;
+        current = n;
         document.getElementById('slide' + n).scrollIntoView({ behavior: 'smooth' });
-        updateNavigation();
+        updateNav();
     }
     
-    function nextSlide() {
-        if (currentSlide < totalSlides) {
-            goToSlide(currentSlide + 1);
-        }
-    }
-    
-    function prevSlide() {
-        if (currentSlide > 1) {
-            goToSlide(currentSlide - 1);
-        }
-    }
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown' || e.key === 'ArrowRight') {
+    document.addEventListener('keydown', e => {
+        if (['ArrowDown', ' ', 'ArrowRight', 'PageDown'].includes(e.key)) {
             e.preventDefault();
-            nextSlide();
-        } else if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'ArrowLeft') {
+            if (current < total) goToSlide(current + 1);
+        } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
             e.preventDefault();
-            prevSlide();
+            if (current > 1) goToSlide(current - 1);
         }
     });
     
-    // Scroll detection
-    let isScrolling = false;
-    window.addEventListener('scroll', function() {
-        if (!isScrolling) {
-            isScrolling = true;
-            setTimeout(function() {
-                const slides = document.querySelectorAll('.slide');
-                slides.forEach((slide, index) => {
-                    const rect = slide.getBoundingClientRect();
-                    if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
-                        currentSlide = index + 1;
-                        updateNavigation();
-                    }
-                });
-                isScrolling = false;
-            }, 100);
-        }
+    window.addEventListener('scroll', () => {
+        document.querySelectorAll('.slide').forEach((s, i) => {
+            const rect = s.getBoundingClientRect();
+            if (rect.top >= -100 && rect.top < window.innerHeight / 2) {
+                current = i + 1;
+                updateNav();
+            }
+        });
     });
 </script>
 
