@@ -3918,8 +3918,22 @@ async def get_statements(company_id: Optional[str] = None, current_user: Dict = 
     query = {}
     if tenant_id:
         query["tenant_id"] = tenant_id
-    if company_id:
+    
+    # Se for colaborador, filtrar apenas empresas vinculadas
+    allowed_company_ids = await get_user_allowed_company_ids(current_user)
+    if allowed_company_ids is not None:
+        if not allowed_company_ids:
+            return []  # Colaborador sem empresas vinculadas
+        # Se especificou company_id, verificar se tem acesso
+        if company_id:
+            if company_id not in allowed_company_ids:
+                raise HTTPException(status_code=403, detail="Você não tem acesso a esta empresa")
+            query["company_id"] = company_id
+        else:
+            query["company_id"] = {"$in": allowed_company_ids}
+    elif company_id:
         query["company_id"] = company_id
+    
     statements = await db.bank_statements.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for s in statements:
         if isinstance(s.get('created_at'), str):
