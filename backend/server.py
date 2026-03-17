@@ -1262,8 +1262,21 @@ async def classify_transaction(description: str, amount: float, trans_type: str,
     for item in account_items:
         accounts_by_type[item['account_type']].append(item)
     
-    # PASSO 3: Buscar regras configuradas
-    rules = await db.classification_rules.find({}, {"_id": 0}).sort("priority", -1).to_list(100)
+    # PASSO 3: Buscar regras configuradas (empresa específica + globais)
+    # Primeiro buscar regras da empresa, depois globais (sem company_id)
+    rules = await db.classification_rules.find({
+        "$or": [
+            {"company_id": company_id},  # Regras da empresa específica
+            {"company_id": None},         # Regras globais
+            {"company_id": {"$exists": False}}  # Regras antigas sem campo
+        ]
+    }, {"_id": 0}).sort("priority", -1).to_list(100)
+    
+    # Ordenar para que regras da empresa tenham prioridade sobre globais
+    rules = sorted(rules, key=lambda r: (
+        0 if r.get('company_id') == company_id else 1,  # Empresa específica primeiro
+        -r.get('priority', 0)  # Depois por prioridade decrescente
+    ))
     
     # Tentar aplicar regras
     for rule in rules:
