@@ -1,197 +1,97 @@
-# Domínio Bridge - Sistema SaaS Multi-Tenant para Contadores
+# Domínio Bridge - PRD (Product Requirements Document)
 
-## Descrição do Projeto
-Sistema web SaaS para escritórios de contabilidade brasileiros. Processa extratos bancários (OFX, Excel, PDF, CSV) e converte em arquivo Excel (.xlsx) estruturado para importação no sistema Domínio (Thomson Reuters).
+## Problema Original
+Sistema web para contadores processar extratos bancários e converter em lançamentos para o Sistema Domínio (Thomson Reuters). Evoluiu para SaaS multi-tenant.
 
-## Stack Tecnológica
-- **Frontend:** React, Tailwind CSS, Lucide React (ícones)
-- **Backend:** FastAPI (Python)
-- **Banco de Dados:** MongoDB
-- **Autenticação:** JWT (JSON Web Tokens)
-- **Arquitetura:** SaaS Multi-Tenant
+## Personas
+- **Super Admin (Dono da Plataforma):** Gerencia escritórios/tenants, vê métricas globais
+- **Admin do Escritório:** Gerencia empresas, usuários e configurações do tenant
+- **Colaborador:** Opera o sistema com acesso restrito às empresas atribuídas
 
-## Arquitetura Multi-Tenant ✅ (Implementado 11/03/2026)
-
-### Níveis de Acesso
-1. **SUPER ADMIN:** Dono da plataforma
-   - Visualiza estatísticas globais
-   - Gerencia todos os escritórios (tenants)
-   - Gerencia todos os usuários da plataforma
-   - Acesso via menu: Dashboard, Escritórios, Usuários
-
-2. **ADMIN DO ESCRITÓRIO:** Administrador de um tenant específico
-   - Gerencia usuários, empresas e configurações do seu escritório
-   - Visualiza apenas dados do seu tenant
-   - Pode atribuir empresas a colaboradores
-   - Acesso ao menu operacional + seção "Administração"
-
-3. **COLABORADOR:** Operador do sistema
-   - Opera o sistema (importa extratos, classifica transações)
-   - **Acessa apenas empresas atribuídas a ele** ✅
-   - Acesso ao menu operacional básico
-
-### Isolamento de Dados
-- Todos os modelos de dados possuem `tenant_id`
-- Todos os endpoints operacionais filtram por `tenant_id` do JWT
-- Impossível acessar dados de outro escritório
+## Arquitetura Multi-Tenant
+- Isolamento completo de dados por tenant
+- 3 níveis de acesso: super_admin, admin_tenant, colaborador
+- Colaboradores só acessam empresas vinculadas via `empresas_vinculadas`
 
 ## Funcionalidades Implementadas
 
-### 1. Processamento de Extratos
-- Upload de arquivos OFX, Excel (xlsx, xls), CSV e PDF
-- Parser inteligente com detecção automática de formato
-- Suporte a arquivos Excel antigos (BIFF5/Excel 5.0/95)
+### Core
+- [x] Upload/processamento de extratos (OFX, Excel/XLSX, CSV, PDF)
+- [x] Classificação automática de transações (regras + histórico + aprendizado)
+- [x] Exportação de lançamentos para Excel (formato Domínio)
+- [x] Gestão de empresas e planos de contas
+- [x] Conversor OFX (Excel/PDF/CSV → OFX)
+- [x] Dashboard com métricas e status de empresas
 
-### 2. Sistema de Classificação Inteligente
-- Memória de classificações (histórico de aprendizado)
-- Classificação automática por similaridade (>60%)
-- **Regras de classificação por empresa** ✅ (Implementado 17/03/2026)
-- Edição em massa de lançamentos
+### Multi-Tenant SaaS
+- [x] CRUD de Escritórios (Tenants)
+- [x] Gestão de Usuários por Tenant
+- [x] Atribuição de Empresas a Colaboradores
+- [x] Regras de Classificação Global e por Empresa
+- [x] Processamentos Contábeis com agrupamento e arquivamento
+- [x] Logs de Atividade por Tenant
 
-### 3. Gestão de Entidades
-- CRUD completo para Empresas
-- CRUD completo para Planos de Contas
-- Importação em massa de Plano de Contas via Excel
-- CRUD completo para Regras de Classificação (com suporte a empresa específica)
+### Refatoração
+- [x] Backend refatorado de monolítico (4350 linhas) para modular (Dec 2025)
 
-### 4. Sistema de Usuários e Autenticação
-- Autenticação via JWT
-- CRUD de usuários por tenant
-- Log de atividades
-- **Atribuição de empresas a colaboradores** ✅ (Implementado 17/03/2026)
+## Arquitetura Técnica
 
-### 5. Interface do Usuário
-- Dashboard operacional por tenant
-- Dashboard global para Super Admin
-- Menu lateral dinâmico por perfil
-- Histórico de processamentos (accordion por empresa)
-
-## Funcionalidades Implementadas em 17/03/2026
-
-### Atribuição de Empresas a Colaboradores ✅
-- Admin pode vincular/desvincular empresas a colaboradores
-- Colaborador vê apenas empresas vinculadas no Dashboard
-- Colaborador não pode acessar dados de empresas não vinculadas
-- Todos os endpoints filtram dados por empresas do colaborador:
-  - GET /api/companies
-  - GET /api/dashboard/stats
-  - GET /api/bank-statements
-  - POST /api/bank-statements/upload
-  - GET /api/accounting-processes
-
-### Regras de Classificação por Empresa ✅
-- Regras podem ser GLOBAIS (todas as empresas) ou específicas de UMA empresa
-- Regras de empresa têm prioridade sobre regras globais
-- UI permite filtrar e criar regras por empresa
-- Backend aplica regras na ordem correta durante classificação
-
-## Credenciais de Teste
-- **Super Admin:** mlagebarutta@gmail.com / super123
-- **Admin Escritório:** admin@dominio.com / admin123
-- **Colaborador Teste:** teste.colab@dominio.com / teste123
-
-## Tenant Existente
-- **ID:** 658832a0-8c77-40ff-8825-971f74caa3f2
-- **Nome:** Escritório Padrão (Migrado)
-- **Empresas:** 21
-- **Usuários:** 5
-- **Extratos:** 22+
-
-## Próximas Tarefas (Backlog)
-
-### P1 - Alta Prioridade
-- ~~Atribuição de Empresas a Colaboradores~~ ✅ CONCLUÍDO
-- Recuperação de Senha (requer integração de e-mail)
-- Validação de CNPJ nos formulários
-
-### P2 - Média Prioridade
-- Timeout de sessão JWT
-- Refatoração do Backend (separar server.py em módulos)
-- Plano de contas dinâmico (criar contas durante classificação)
-- Correção dos "hydration errors" do React
-
-### P3 - Baixa Prioridade
-- Sistema de Planos e Pagamentos (Stripe)
-- Integração com Open Finance (Pluggy/Belvo)
-- Reativar Conversor OFX
-- Suporte a arquivos .xls legados (requer ssconvert)
-
-## Endpoints Principais
-
-### Autenticação
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/change-password`
-
-### Super Admin
-- `GET /api/superadmin/dashboard`
-- `GET /api/superadmin/tenants`
-- `POST /api/superadmin/tenants`
-- `PUT /api/superadmin/tenants/{id}`
-
-### Empresas
-- `GET /api/companies` - Lista empresas (filtrado por colaborador)
-- `POST /api/companies`
-- `PUT /api/companies/{id}`
-- `DELETE /api/companies/{id}`
-
-### Usuários
-- `GET /api/usuarios`
-- `POST /api/usuarios`
-- `PUT /api/usuarios/{id}`
-- `DELETE /api/usuarios/{id}`
-- `POST /api/usuarios/{id}/empresas` - Vincular empresa a usuário
-- `DELETE /api/usuarios/{id}/empresas/{empresa_id}` - Desvincular empresa
-
-### Regras de Classificação
-- `GET /api/classification-rules?company_id={id}` - Lista regras (com filtro opcional por empresa)
-- `POST /api/classification-rules` - Criar regra (com company_id opcional)
-- `PUT /api/classification-rules/{id}`
-- `DELETE /api/classification-rules/{id}`
-
-### Extratos
-- `POST /api/bank-statements/upload`
-- `GET /api/bank-statements`
-- `GET /api/bank-statements/{id}/transactions`
-
-## Arquivos de Referência
-- `/app/backend/server.py` - Backend principal (>4300 linhas)
-- `/app/frontend/src/App.js` - Rotas do frontend
-- `/app/frontend/src/components/SidebarLayout.js` - Menu dinâmico
-- `/app/frontend/src/pages/superadmin/` - Páginas do Super Admin
-- `/app/frontend/src/pages/Settings.js` - Configurações e regras por empresa
-- `/app/frontend/src/pages/UserManagement.js` - Gerenciamento de usuários
-- `/app/frontend/src/utils/api.js` - Utilitário axios com token automático
-
-## Schema do Banco de Dados
-
-### classification_rules
-```json
-{
-  "id": "uuid",
-  "tenant_id": "uuid",
-  "company_id": "uuid | null",  // null = regra global
-  "company_name": "string | null",
-  "keyword": "string",
-  "debit_account_code": "string",
-  "credit_account_code": "string",
-  "description": "string",
-  "priority": "int",
-  "created_at": "datetime"
-}
+### Backend (FastAPI + MongoDB)
+```
+backend/
+├── server.py           # Entry point (~60 linhas)
+├── database.py         # MongoDB connection
+├── models/             # Pydantic models
+│   ├── tenant.py
+│   ├── user.py
+│   ├── company.py
+│   ├── transaction.py
+│   └── accounting.py
+├── auth/
+│   └── helpers.py      # JWT, auth dependencies
+├── services/
+│   ├── classification.py  # Classificação inteligente
+│   └── parsers.py        # Parsers OFX/PDF/Excel/CSV
+├── routes/
+│   ├── auth.py, superadmin.py, users.py
+│   ├── dashboard.py, companies.py
+│   ├── chart_of_accounts.py, classification.py
+│   ├── statements.py, accounting.py, converter.py
+└── utils/
+    └── helpers.py
 ```
 
-### usuario_empresas (Vínculo usuário-empresa)
-```json
-{
-  "id": "uuid",
-  "tenant_id": "uuid",
-  "usuario_id": "uuid",
-  "empresa_id": "uuid"
-}
+### Frontend (React + Tailwind)
+```
+frontend/src/
+├── pages/              # Dashboard, Settings, History, etc.
+├── components/         # Sidebar, shared components
+└── utils/api.js        # Axios client com interceptor JWT
 ```
 
-## Última Atualização
-**17/03/2026** - Implementadas duas funcionalidades principais:
-1. Atribuição de Empresas a Colaboradores - Controle granular de acesso
-2. Regras de Classificação por Empresa - Personalização por cliente
+## DB Schema (MongoDB)
+- **tenants:** id, nome, cnpj, email, plano, status, max_usuarios, max_empresas
+- **usuarios:** id, tenant_id, nome, email, senha, perfil, status
+- **usuario_empresas:** id, tenant_id, usuario_id, empresa_id
+- **companies:** id, tenant_id, cnpj, name
+- **chart_of_accounts:** id, tenant_id, company_id, name
+- **account_items:** id, tenant_id, chart_id, code, description, account_type
+- **classification_rules:** id, tenant_id, company_id (opcional), keyword, debit/credit_account_code, priority
+- **classification_history:** id, tenant_id, company_id, description_pattern, debit/credit_account, usage_count
+- **bank_statements:** id, tenant_id, company_id, chart_id, filename, period, status
+- **transactions:** id, statement_id, date, description, amount, transaction_type, debit/credit_account, status
+- **accounting_processes:** id, tenant_id, company_id, year, month, status
+- **activity_logs:** id, tenant_id, usuario_id, acao, detalhes
+
+## Issues Conhecidos
+- (P2) Arquivos `.xls` legados não processam (falta `ssconvert`/`gnumeric`)
+- (P3) React hydration warnings em tabelas (HTML aninhado incorreto)
+
+## Backlog (Priorizado)
+- (P1) Recuperação de Senha (requer integração email)
+- (P1) Deploy em Produção
+- (P2) Validação de CNPJ nos formulários
+- (P2) Timeout/expiração de sessão JWT
+- (P2) Plano de Contas Dinâmico (criar contas durante classificação)
+- (P3) Sistema de Planos/Pagamentos (Stripe)
+- (P3) Integração Open Finance (Pluggy/Belvo)
